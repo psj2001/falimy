@@ -250,6 +250,27 @@ class LocalFinancialRepository implements FinancialRepository {
     return mode;
   }
 
+  @override
+  Future<CashBook> setBookCloudSynced({
+    required String bookId,
+    required bool synced,
+  }) async {
+    final index = _cache.books.indexWhere((b) => b.id == bookId);
+    if (index < 0) throw StateError('Book not found');
+
+    final updated = _cache.books[index].copyWith(syncedToCloud: synced);
+    final books = [..._cache.books];
+    books[index] = updated;
+    _cache = FinancialSnapshot(
+      books: books,
+      entries: _cache.entries,
+      categories: _cache.categories,
+      paymentModes: _cache.paymentModes,
+    );
+    await _store.save(_cache);
+    return updated;
+  }
+
   String _newId(String prefix) =>
       '${prefix}_${DateTime.now().microsecondsSinceEpoch}';
 }

@@ -9,6 +9,7 @@ class CashBook extends Equatable {
     required this.access,
     required this.createdAt,
     required this.updatedAt,
+    this.syncedToCloud = false,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class CashBook extends Equatable {
   final BookAccess access;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool syncedToCloud;
 
   CashBook copyWith({
     String? id,
@@ -23,6 +25,7 @@ class CashBook extends Equatable {
     BookAccess? access,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? syncedToCloud,
   }) {
     return CashBook(
       id: id ?? this.id,
@@ -30,10 +33,21 @@ class CashBook extends Equatable {
       access: access ?? this.access,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      syncedToCloud: syncedToCloud ?? this.syncedToCloud,
     );
   }
 
   Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'access': access.name,
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+        'syncedToCloud': syncedToCloud,
+      };
+
+  /// Payload for cloud (omit local-only sync flag noise is fine either way).
+  Map<String, dynamic> toCloudJson() => {
         'id': id,
         'name': name,
         'access': access.name,
@@ -51,9 +65,11 @@ class CashBook extends Equatable {
       ),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      syncedToCloud: json['syncedToCloud'] as bool? ?? false,
     );
   }
 
   @override
-  List<Object?> get props => [id, name, access, createdAt, updatedAt];
+  List<Object?> get props =>
+      [id, name, access, createdAt, updatedAt, syncedToCloud];
 }

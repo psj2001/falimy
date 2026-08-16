@@ -33,6 +33,11 @@ abstract class FinancialRepository {
     required String bookId,
     required String name,
   });
+
+  Future<CashBook> setBookCloudSynced({
+    required String bookId,
+    required bool synced,
+  });
 }
 
 class FinancialSnapshot {

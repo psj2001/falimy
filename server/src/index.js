@@ -7,6 +7,7 @@ const { connectDb } = require('./db');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const inviteRoutes = require('./routes/invites');
+const financialRoutes = require('./routes/financial');
 
 async function main() {
   await connectDb();
@@ -23,6 +24,7 @@ async function main() {
   app.use('/api/auth', authRoutes);
   app.use('/api/profile', profileRoutes);
   app.use('/api/invites', inviteRoutes);
+  app.use('/api/financial', financialRoutes);
 
   app.use((err, _req, res, _next) => {
     console.error(err);

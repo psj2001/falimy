@@ -11,15 +11,21 @@ class BookTile extends StatelessWidget {
     required this.balance,
     required this.onTap,
     required this.onMore,
+    required this.onCloudToggle,
+    this.cloudBusy = false,
   });
 
   final CashBook book;
   final double balance;
   final VoidCallback onTap;
   final VoidCallback onMore;
+  final VoidCallback onCloudToggle;
+  final bool cloudBusy;
 
   @override
   Widget build(BuildContext context) {
+    final synced = book.syncedToCloud;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -63,6 +69,17 @@ class BookTile extends StatelessWidget {
                       fontSize: 12,
                     ),
                   ),
+                  if (synced) ...[
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Saved in cloud',
+                      style: TextStyle(
+                        color: FalimyTheme.seed,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -74,6 +91,25 @@ class BookTile extends StatelessWidget {
                 fontSize: 16,
               ),
             ),
+            const SizedBox(width: 4),
+            if (cloudBusy)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              IconButton(
+                tooltip: synced ? 'Remove from cloud' : 'Save to cloud',
+                onPressed: onCloudToggle,
+                icon: Icon(
+                  synced ? Icons.cloud_done : Icons.cloud_upload_outlined,
+                  color: synced ? FalimyTheme.seed : FalimyTheme.muted,
+                ),
+              ),
             IconButton(
               onPressed: onMore,
               icon: const Icon(Icons.more_vert, color: FalimyTheme.muted),

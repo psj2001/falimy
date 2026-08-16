@@ -18,13 +18,6 @@ class BooksScreen extends ConsumerStatefulWidget {
 }
 
 class _BooksScreenState extends ConsumerState<BooksScreen> {
-  static const _suggestions = [
-    'August Expenses',
-    'New Project',
-    'Client Record',
-    'Project Book',
-  ];
-
   String _search = '';
   bool _showTip = true;
 
@@ -44,6 +37,60 @@ class _BooksScreenState extends ConsumerState<BooksScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _toggleCloud(CashBook book) async {
+    final notifier = ref.read(financialNotifierProvider.notifier);
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (book.syncedToCloud) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Remove from cloud?'),
+          content: Text(
+            '"${book.name}" will be removed from the cloud. It stays on this phone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Remove'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      final ok = await notifier.removeBookFromCloud(book.id);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? 'Removed from cloud'
+                : (ref.read(financialNotifierProvider).error ??
+                    'Could not remove from cloud'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final ok = await notifier.saveBookToCloud(book.id);
+    if (!mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Saved to cloud'
+              : (ref.read(financialNotifierProvider).error ??
+                  'Could not save to cloud. Sign in and try again.'),
+        ),
+      ),
+    );
   }
 
   Future<void> _handleBookAction(CashBook book) async {
@@ -220,33 +267,6 @@ class _BooksScreenState extends ConsumerState<BooksScreen> {
                     ],
                   ),
                 ),
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.check_circle, color: FalimyTheme.seed, size: 18),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'You are on Free Trial. 30 days remaining.',
-                          style: TextStyle(
-                            color: FalimyTheme.ink,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      Icon(Icons.chevron_right, color: FalimyTheme.muted),
-                    ],
-                  ),
-                ),
                 Expanded(
                   child: state.isLoading
                       ? const Center(child: CircularProgressIndicator())
@@ -329,6 +349,7 @@ class _BooksScreenState extends ConsumerState<BooksScreen> {
                                 (book) => BookTile(
                                   book: book,
                                   balance: state.balanceFor(book.id).net,
+                                  cloudBusy: state.cloudBusyBookId == book.id,
                                   onTap: () {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
@@ -338,10 +359,9 @@ class _BooksScreenState extends ConsumerState<BooksScreen> {
                                     );
                                   },
                                   onMore: () => _handleBookAction(book),
+                                  onCloudToggle: () => _toggleCloud(book),
                                 ),
                               ),
-                            const SizedBox(height: 16),
-                            _quickAddCard(),
                           ],
                         ),
                 ),
@@ -361,53 +381,6 @@ class _BooksScreenState extends ConsumerState<BooksScreen> {
           ],
         ),
       ),
-      ),
-    );
-  }
-
-  Widget _quickAddCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: FalimyTheme.muted.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Add New Book',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-              color: FalimyTheme.ink,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Click to quickly add books for',
-            style: TextStyle(color: FalimyTheme.muted, fontSize: 13),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _suggestions
-                .map(
-                  (s) => ActionChip(
-                    label: Text(s),
-                    backgroundColor: FalimyTheme.seed.withValues(alpha: 0.1),
-                    labelStyle: const TextStyle(
-                      color: FalimyTheme.seed,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onPressed: () => _openAddBook(prefill: s),
-                  ),
-                )
-                .toList(),
-          ),
-        ],
       ),
     );
   }

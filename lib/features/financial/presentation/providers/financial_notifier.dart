@@ -27,6 +27,7 @@ class FinancialState extends Equatable {
     this.paymentModes = const [],
     this.isLoading = true,
     this.isSaving = false,
+    this.cloudBusyBookId,
     this.error,
   });
 
@@ -36,6 +37,7 @@ class FinancialState extends Equatable {
   final List<PaymentMode> paymentModes;
   final bool isLoading;
   final bool isSaving;
+  final String? cloudBusyBookId;
   final String? error;
 
   BookBalance balanceFor(String bookId) {
@@ -80,6 +82,8 @@ class FinancialState extends Equatable {
     List<PaymentMode>? paymentModes,
     bool? isLoading,
     bool? isSaving,
+    String? cloudBusyBookId,
+    bool clearCloudBusy = false,
     String? error,
     bool clearError = false,
   }) {
@@ -90,13 +94,23 @@ class FinancialState extends Equatable {
       paymentModes: paymentModes ?? this.paymentModes,
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
+      cloudBusyBookId:
+          clearCloudBusy ? null : (cloudBusyBookId ?? this.cloudBusyBookId),
       error: clearError ? null : (error ?? this.error),
     );
   }
 
   @override
-  List<Object?> get props =>
-      [books, entries, categories, paymentModes, isLoading, isSaving, error];
+  List<Object?> get props => [
+        books,
+        entries,
+        categories,
+        paymentModes,
+        isLoading,
+        isSaving,
+        cloudBusyBookId,
+        error,
+      ];
 }
 
 class FinancialNotifier extends Notifier<FinancialState> {
@@ -268,6 +282,63 @@ class FinancialNotifier extends Notifier<FinancialState> {
     } catch (e) {
       state = state.copyWith(isSaving: false, error: e.toString());
       return null;
+    }
+  }
+
+  /// Upload book + entries to cloud. Keeps a local copy.
+  Future<bool> saveBookToCloud(String bookId) async {
+    final book = state.bookById(bookId);
+    if (book == null) {
+      state = state.copyWith(error: 'Book not found');
+      return false;
+    }
+    state = state.copyWith(
+      cloudBusyBookId: bookId,
+      clearError: true,
+    );
+    try {
+      await ref.read(financialCloudRepositoryProvider).upsertBook(
+            book: book,
+            entries: state.entries.where((e) => e.bookId == bookId).toList(),
+            categories:
+                state.categories.where((c) => c.bookId == bookId).toList(),
+            paymentModes:
+                state.paymentModes.where((p) => p.bookId == bookId).toList(),
+          );
+      await ref.read(financialRepositoryProvider).setBookCloudSynced(
+            bookId: bookId,
+            synced: true,
+          );
+      await load();
+      state = state.copyWith(clearCloudBusy: true);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        clearCloudBusy: true,
+        error: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  /// Remove book from cloud only. Local book stays on device.
+  Future<bool> removeBookFromCloud(String bookId) async {
+    state = state.copyWith(cloudBusyBookId: bookId, clearError: true);
+    try {
+      await ref.read(financialCloudRepositoryProvider).removeBook(bookId);
+      await ref.read(financialRepositoryProvider).setBookCloudSynced(
+            bookId: bookId,
+            synced: false,
+          );
+      await load();
+      state = state.copyWith(clearCloudBusy: true);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        clearCloudBusy: true,
+        error: e.toString(),
+      );
+      return false;
     }
   }
 }
