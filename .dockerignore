@@ -1,0 +1,9 @@
+node_modules
+server/node_modules
+.git
+.dart_tool
+build
+ios
+android
+**/.* 
+!server/
