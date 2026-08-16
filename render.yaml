@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: falimy-api
+    runtime: node
+    rootDir: server
+    plan: free
+    # Free web services are available in Oregon
+    region: oregon
+    buildCommand: npm ci --omit=dev
+    startCommand: node src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: USE_MEMORY_MONGO
+        value: "false"
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 30d

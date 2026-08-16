@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "417725801877",
+    "project_id": "falimy-app",
+    "storage_bucket": "falimy-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:417725801877:android:fe12f2b4c50cf93db2c29c",
+        "android_client_info": {
+          "package_name": "com.example.falimy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLqU0h9WxXXM9ODukM8bOV8edyfQ51MYM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

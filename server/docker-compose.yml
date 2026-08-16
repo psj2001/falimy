@@ -1,0 +1,11 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: falimy-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - falimy_mongo_data:/data/db
+
+volumes:
+  falimy_mongo_data:

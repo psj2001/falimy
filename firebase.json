@@ -1,0 +1,55 @@
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ],
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "falimy-app",
+          "appId": "1:417725801877:android:fe12f2b4c50cf93db2c29c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "darwin": {
+        "default": {
+          "projectId": "falimy-app",
+          "appId": "1:417725801877:ios:a13422645592f672b2c29c",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "falimy-app",
+          "appId": "1:417725801877:ios:a13422645592f672b2c29c",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "falimy-app",
+          "configurations": {
+            "android": "1:417725801877:android:fe12f2b4c50cf93db2c29c",
+            "ios": "1:417725801877:ios:a13422645592f672b2c29c"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
