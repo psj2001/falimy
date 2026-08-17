@@ -37,6 +37,23 @@ class ApiInviteRepository implements InviteRepository {
       memberName: (inviteMap['memberName'] as String?) ?? memberName,
       memberRole: (inviteMap['memberRole'] as String?) ?? memberRole,
       inviterName: (inviteMap['inviterName'] as String?) ?? 'A family member',
+      referralCode: inviteMap['referralCode'] as String?,
+    );
+  }
+
+  @override
+  Future<ReferralPreview> resolveReferral(String code) async {
+    final normalized = code.trim().toUpperCase();
+    final json = await _api.getJson(
+      '/api/invites/referral/${Uri.encodeComponent(normalized)}',
+    );
+    return ReferralPreview(
+      inviterName: (json['inviterName'] as String?) ?? '',
+      memberName: (json['memberName'] as String?) ?? '',
+      memberRole: (json['memberRole'] as String?) ?? '',
+      memberKind: (json['memberKind'] as String?) ?? '',
+      familyName: json['familyName'] as String?,
+      inviteeEmailHint: json['inviteeEmailHint'] as String?,
     );
   }
 

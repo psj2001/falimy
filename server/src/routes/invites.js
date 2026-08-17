@@ -1,13 +1,68 @@
 const express = require('express');
 const User = require('../models/User');
 const Invite = require('../models/Invite');
+const Notification = require('../models/Notification');
 const { authRequired } = require('../middleware/auth');
+const { sendFamilyInvite } = require('../services/mail');
+const {
+  generateReferralCode,
+  normalizeReferralCode,
+  maskEmail,
+} = require('../utils/referral');
 
 const router = express.Router();
 
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
+
+async function createInviteWithCode(fields) {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      return await Invite.create({
+        ...fields,
+        referralCode: generateReferralCode(),
+      });
+    } catch (err) {
+      if (err && err.code === 11000 && attempt < 5) {
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('Could not allocate a unique referral code');
+}
+
+router.get('/referral/:code', async (req, res) => {
+  try {
+    const code = normalizeReferralCode(req.params.code);
+    if (code.length < 6) {
+      return res.status(400).json({ message: 'Enter a valid referral code' });
+    }
+
+    const invite = await Invite.findOne({
+      referralCode: code,
+      status: 'pending',
+    });
+    if (!invite) {
+      return res.status(404).json({
+        message: 'Invalid or already used referral code',
+      });
+    }
+
+    return res.json({
+      inviterName: invite.inviterName || '',
+      memberName: invite.memberName,
+      memberRole: invite.memberRole,
+      memberKind: invite.memberKind,
+      familyName: invite.familyName || null,
+      inviteeEmailHint: maskEmail(invite.inviteeEmail),
+    });
+  } catch (err) {
+    console.error('resolve referral', err);
+    return res.status(500).json({ message: 'Failed to look up referral code' });
+  }
+});
 
 router.post('/', authRequired, async (req, res) => {
   try {
@@ -38,7 +93,7 @@ router.post('/', authRequired, async (req, res) => {
         .json({ message: 'You cannot invite your own email address.' });
     }
 
-    const invite = await Invite.create({
+    const invite = await createInviteWithCode({
       inviteeEmail,
       inviterUserId: inviter._id,
       inviterName: inviter.fullName || inviter.email,
@@ -48,6 +103,35 @@ router.post('/', authRequired, async (req, res) => {
       memberRole,
       familyName,
       status: 'pending',
+    });
+
+    const existingInvitee = await User.findOne({ email: inviteeEmail }).select(
+      '_id',
+    );
+    if (existingInvitee) {
+      await Notification.create({
+        recipientUserId: existingInvitee._id,
+        type: 'family_invite',
+        title: 'Family invitation',
+        message: `${invite.inviterName} invited you to join their family tree as ${invite.memberRole}.`,
+        eventKey: `family_invite:${invite._id}:${existingInvitee._id}`,
+        data: {
+          inviteId: invite._id.toString(),
+          inviterUserId: inviter._id.toString(),
+          memberKey: invite.memberKey,
+          memberRole: invite.memberRole,
+          referralCode: invite.referralCode,
+        },
+      });
+    }
+
+    const mail = await sendFamilyInvite({
+      to: inviteeEmail,
+      inviterName: invite.inviterName,
+      memberName: invite.memberName,
+      memberRole: invite.memberRole,
+      familyName: invite.familyName,
+      referralCode: invite.referralCode,
     });
 
     return res.status(201).json({
@@ -61,9 +145,10 @@ router.post('/', authRequired, async (req, res) => {
         memberKind: invite.memberKind,
         memberRole: invite.memberRole,
         familyName: invite.familyName,
+        referralCode: invite.referralCode,
         status: invite.status,
       },
-      emailDelivered: false,
+      emailDelivered: mail.delivered === true,
     });
   } catch (err) {
     console.error('send invite', err);

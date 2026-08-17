@@ -49,6 +49,8 @@ const linkedInviteSchema = new mongoose.Schema(
     memberKind: String,
     memberRole: String,
     familyName: String,
+    spouseSuggestionName: String,
+    spouseSuggestionRole: String,
   },
   { _id: false },
 );
@@ -77,6 +79,14 @@ const userSchema = new mongoose.Schema(
     hasChildren: Boolean,
     children: { type: [childSchema], default: [] },
     onboardingComplete: { type: Boolean, default: false },
+
+    occupationStatus: {
+      type: String,
+      enum: ['working', 'studying', 'unemployed', 'retired'],
+    },
+    companyName: String,
+    salary: Number,
+    studyClassOrCourse: String,
 
     memberLinks: { type: Map, of: memberLinkSchema, default: {} },
     linkedFromInvites: { type: [linkedInviteSchema], default: [] },
@@ -112,6 +122,10 @@ userSchema.methods.toProfile = function toProfile() {
     hasChildren: this.hasChildren ?? null,
     children: this.children ?? [],
     onboardingComplete: this.onboardingComplete ?? false,
+    occupationStatus: this.occupationStatus ?? null,
+    companyName: this.companyName ?? null,
+    salary: this.salary ?? null,
+    studyClassOrCourse: this.studyClassOrCourse ?? null,
     memberLinks,
     linkedFromInvites: this.linkedFromInvites ?? [],
   };

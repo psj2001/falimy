@@ -34,10 +34,14 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
   late TextEditingController _spouseProfession;
   late TextEditingController _spouseAge;
   late TextEditingController _spouseFamily;
+  late TextEditingController _companyName;
+  late TextEditingController _salary;
+  late TextEditingController _studyClassOrCourse;
 
   DateTime? _dateOfBirth;
   String? _photoPath;
   bool _isMarried = false;
+  OccupationStatus? _occupationStatus;
   List<_SiblingEdit> _siblings = [];
   List<_ChildEdit> _children = [];
 
@@ -53,6 +57,9 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
     _spouseProfession = TextEditingController();
     _spouseAge = TextEditingController();
     _spouseFamily = TextEditingController();
+    _companyName = TextEditingController();
+    _salary = TextEditingController();
+    _studyClassOrCourse = TextEditingController();
     _loadFromProfile(ref.read(onboardingNotifierProvider));
   }
 
@@ -67,6 +74,10 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
     _father.text = profile.fatherName ?? '';
     _mother.text = profile.motherName ?? '';
     _isMarried = profile.isMarried == true;
+    _occupationStatus = profile.occupationStatus;
+    _companyName.text = profile.companyName ?? '';
+    _salary.text = profile.salary?.toString() ?? '';
+    _studyClassOrCourse.text = profile.studyClassOrCourse ?? '';
 
     for (final s in _siblings) {
       s.name.dispose();
@@ -112,6 +123,9 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
     _spouseProfession.dispose();
     _spouseAge.dispose();
     _spouseFamily.dispose();
+    _companyName.dispose();
+    _salary.dispose();
+    _studyClassOrCourse.dispose();
     for (final s in _siblings) {
       s.name.dispose();
     }
@@ -222,6 +236,21 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
         hasChildren: children.isNotEmpty,
         children: children,
         onboardingComplete: true,
+        occupationStatus: _occupationStatus,
+        clearOccupationStatus: _occupationStatus == null,
+        companyName: _occupationStatus == OccupationStatus.working
+            ? _companyName.text.trim()
+            : null,
+        clearCompanyName: _occupationStatus != OccupationStatus.working,
+        salary: _occupationStatus == OccupationStatus.working &&
+                _salary.text.trim().isNotEmpty
+            ? num.tryParse(_salary.text.trim().replaceAll(',', ''))
+            : null,
+        clearSalary: _occupationStatus != OccupationStatus.working,
+        studyClassOrCourse: _occupationStatus == OccupationStatus.studying
+            ? _studyClassOrCourse.text.trim()
+            : null,
+        clearStudyClassOrCourse: _occupationStatus != OccupationStatus.studying,
       );
 
       await ref.read(onboardingNotifierProvider.notifier).updateProfile(updated);
@@ -361,6 +390,73 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                       InputDecorator(
                         decoration: const InputDecoration(labelText: 'Email'),
                         child: Text(auth.user!.email),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    _sectionTitle(context, 'Occupation'),
+                    if (_editing)
+                      DropdownButtonFormField<OccupationStatus>(
+                        value: _occupationStatus,
+                        decoration: const InputDecoration(
+                          labelText: 'Status',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: OccupationStatus.values
+                            .map(
+                              (status) => DropdownMenuItem(
+                                value: status,
+                                child: Text(_occupationLabel(status)),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() => _occupationStatus = value);
+                        },
+                      )
+                    else
+                      Text(
+                        _occupationStatus == null
+                            ? 'Not set'
+                            : _occupationLabel(_occupationStatus!),
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    if (_occupationStatus == OccupationStatus.working) ...[
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        label: 'Company name',
+                        controller: _companyName,
+                        readOnly: !_editing,
+                        validator: (v) {
+                          if (_occupationStatus != OccupationStatus.working) {
+                            return null;
+                          }
+                          return (v == null || v.trim().isEmpty)
+                              ? 'Required'
+                              : null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        label: 'Salary (optional)',
+                        controller: _salary,
+                        readOnly: !_editing,
+                        keyboardType: TextInputType.number,
+                      ),
+                    ],
+                    if (_occupationStatus == OccupationStatus.studying) ...[
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        label: 'Class or course',
+                        controller: _studyClassOrCourse,
+                        readOnly: !_editing,
+                        validator: (v) {
+                          if (_occupationStatus != OccupationStatus.studying) {
+                            return null;
+                          }
+                          return (v == null || v.trim().isEmpty)
+                              ? 'Required'
+                              : null;
+                        },
                       ),
                     ],
                     const SizedBox(height: 24),
@@ -673,6 +769,19 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
       ),
       child: Padding(padding: const EdgeInsets.all(12), child: child),
     );
+  }
+
+  String _occupationLabel(OccupationStatus status) {
+    switch (status) {
+      case OccupationStatus.working:
+        return 'Working';
+      case OccupationStatus.studying:
+        return 'Studying';
+      case OccupationStatus.unemployed:
+        return 'Unemployed';
+      case OccupationStatus.retired:
+        return 'Retired';
+    }
   }
 }
 

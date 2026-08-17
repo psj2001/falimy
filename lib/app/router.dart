@@ -7,17 +7,24 @@ import 'package:falimy/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:falimy/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:falimy/features/auth/presentation/screens/sign_up_screen.dart';
 import 'package:falimy/features/auth/presentation/screens/splash_screen.dart';
+import 'package:falimy/features/auth/presentation/screens/verify_email_screen.dart';
 import 'package:falimy/features/home/domain/family_member_detail.dart';
 import 'package:falimy/features/home/presentation/screens/home_screen.dart';
 import 'package:falimy/features/home/presentation/screens/member_detail_screen.dart';
+import 'package:falimy/features/budget/presentation/screens/budget_screen.dart';
+import 'package:falimy/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 import 'package:falimy/features/onboarding/presentation/screens/basic_info_screen.dart';
 import 'package:falimy/features/onboarding/presentation/screens/children_count_screen.dart';
 import 'package:falimy/features/onboarding/presentation/screens/children_details_screen.dart';
 import 'package:falimy/features/onboarding/presentation/screens/children_question_screen.dart';
 import 'package:falimy/features/onboarding/presentation/screens/married_question_screen.dart';
+import 'package:falimy/features/onboarding/presentation/screens/occupation_status_screen.dart';
 import 'package:falimy/features/onboarding/presentation/screens/parents_siblings_screen.dart';
 import 'package:falimy/features/onboarding/presentation/screens/spouse_screen.dart';
+import 'package:falimy/features/onboarding/presentation/screens/study_details_screen.dart';
+import 'package:falimy/features/onboarding/presentation/screens/work_details_screen.dart';
+import 'package:falimy/features/onboarding/presentation/screens/working_question_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -44,8 +51,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       final profile = ref.read(onboardingNotifierProvider);
       final loc = state.matchedLocation;
 
-      final isAuthRoute =
-          loc == AppRoutes.signIn || loc == AppRoutes.signUp || loc == AppRoutes.splash;
+      final isAuthRoute = loc == AppRoutes.signIn ||
+          loc == AppRoutes.signUp ||
+          loc == AppRoutes.verifyEmail ||
+          loc == AppRoutes.splash;
       final isOnboarding = loc.startsWith('/onboarding');
 
       if (loc == AppRoutes.splash) return null;
@@ -55,7 +64,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (auth.isAuthenticated &&
-          (loc == AppRoutes.signIn || loc == AppRoutes.signUp)) {
+          (loc == AppRoutes.signIn ||
+              loc == AppRoutes.signUp ||
+              loc == AppRoutes.verifyEmail)) {
         return profile.onboardingComplete
             ? AppRoutes.home
             : AppRoutes.basicInfo;
@@ -85,8 +96,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SignUpScreen(),
       ),
       GoRoute(
+        path: AppRoutes.verifyEmail,
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return VerifyEmailScreen(email: email);
+        },
+      ),
+      GoRoute(
         path: AppRoutes.basicInfo,
         builder: (context, state) => const BasicInfoScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.working,
+        builder: (context, state) => const WorkingQuestionScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.occupationStatus,
+        builder: (context, state) => const OccupationStatusScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.workDetails,
+        builder: (context, state) => const WorkDetailsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.studyDetails,
+        builder: (context, state) => const StudyDetailsScreen(),
       ),
       GoRoute(
         path: AppRoutes.parents,
@@ -130,6 +164,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           }
           return MemberDetailScreen(member: member);
         },
+      ),
+      GoRoute(
+        path: AppRoutes.notifications,
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.budget,
+        builder: (context, state) => const BudgetScreen(),
       ),
     ],
   );

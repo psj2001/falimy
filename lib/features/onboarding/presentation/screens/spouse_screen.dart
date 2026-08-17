@@ -26,13 +26,43 @@ class _SpouseScreenState extends ConsumerState<SpouseScreen> {
   @override
   void initState() {
     super.initState();
-    final spouse = ref.read(onboardingNotifierProvider).spouse;
-    if (spouse != null) {
-      _nameController.text = spouse.name;
-      _professionController.text = spouse.profession;
-      _ageController.text = spouse.age.toString();
-      _familyNameController.text = spouse.familyName;
+    _applySpouseDefaults(ref.read(onboardingNotifierProvider));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(onboardingNotifierProvider.notifier).ensureLoaded();
+      if (!mounted) return;
+      _applySpouseDefaults(ref.read(onboardingNotifierProvider));
+    });
+  }
+
+  void _applySpouseDefaults(FamilyProfile profile) {
+    final spouse = profile.spouse;
+    if (spouse == null) return;
+
+    var changed = false;
+    if (_nameController.text.trim().isEmpty && spouse.name.trim().isNotEmpty) {
+      _nameController.text = spouse.name.trim();
+      changed = true;
     }
+    if (_professionController.text.trim().isEmpty &&
+        spouse.profession.trim().isNotEmpty) {
+      _professionController.text = spouse.profession.trim();
+      changed = true;
+    }
+    if (_ageController.text.trim().isEmpty && spouse.age > 0) {
+      _ageController.text = spouse.age.toString();
+      changed = true;
+    }
+    if (_familyNameController.text.trim().isEmpty &&
+        spouse.familyName.trim().isNotEmpty) {
+      _familyNameController.text = spouse.familyName.trim();
+      changed = true;
+    } else if (_familyNameController.text.trim().isEmpty &&
+        (profile.familyName?.trim().isNotEmpty ?? false)) {
+      _familyNameController.text = profile.familyName!.trim();
+      changed = true;
+    }
+
+    if (changed && mounted) setState(() {});
   }
 
   @override
@@ -55,14 +85,46 @@ class _SpouseScreenState extends ConsumerState<SpouseScreen> {
             familyName: _familyNameController.text.trim(),
           ),
         );
+
+    final profile = ref.read(onboardingNotifierProvider);
+    if (profile.hasInviteChildrenSuggestion) {
+      context.push(
+        AppRoutes.childrenDetails,
+        extra: profile.children.length,
+      );
+      return;
+    }
     context.push(AppRoutes.childrenQuestion);
+  }
+
+  String _subtitle(FamilyProfile profile) {
+    final role = profile.spouseSuggestionRole?.trim() ?? '';
+    final inviter = profile.linkedInviterName?.trim() ?? '';
+    final kind = (profile.linkedMemberKind ?? '').toLowerCase();
+    if (kind == 'father' && role.toLowerCase() == 'mother') {
+      final from = inviter.isEmpty ? "your child's family tree" : "$inviter's family tree";
+      return 'Auto-filled as Mother from $from. Confirm or edit details.';
+    }
+    if (kind == 'mother' && role.toLowerCase() == 'father') {
+      final from = inviter.isEmpty ? "your child's family tree" : "$inviter's family tree";
+      return 'Auto-filled as Father from $from. Confirm or edit details.';
+    }
+    if (role.isNotEmpty) {
+      return 'Auto-filled as $role from the family invite. Confirm or edit details.';
+    }
+    return 'Name, profession, age, and family name';
   }
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(onboardingNotifierProvider);
+    ref.listen<FamilyProfile>(onboardingNotifierProvider, (_, next) {
+      _applySpouseDefaults(next);
+    });
+
     return OnboardingScaffold(
       title: 'About your spouse',
-      subtitle: 'Name, profession, age, and family name',
+      subtitle: _subtitle(profile),
       bottom: PrimaryButton(label: 'Continue', onPressed: _continue),
       child: Form(
         key: _formKey,

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:falimy/app/theme.dart';
 import 'package:falimy/core/constants/app_routes.dart';
+import 'package:falimy/core/widgets/profile_avatar.dart';
 import 'package:falimy/features/home/domain/family_member_detail.dart';
 import 'package:falimy/features/onboarding/domain/entities/family_profile.dart';
 
@@ -17,6 +18,9 @@ class FamilyOrgChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fatherLink = profile.memberLinks['father'];
+    final motherLink = profile.memberLinks['mother'];
+    final spouseLink = profile.memberLinks['spouse'];
     final elders = profile.siblings
         .where((s) => s.seniority == SiblingSeniority.elder)
         .toList();
@@ -42,6 +46,7 @@ class FamilyOrgChart extends StatelessWidget {
                   _Node(
                     name: profile.fatherName ?? 'Father',
                     role: 'Father',
+                    photoPath: fatherLink?.photoPath,
                     muted: profile.fatherName == null,
                     onTap: profile.fatherName == null
                         ? null
@@ -53,6 +58,9 @@ class FamilyOrgChart extends StatelessWidget {
                                 role: 'Father',
                                 kind: FamilyMemberKind.father,
                                 familyName: profile.familyName,
+                                photoPath: fatherLink?.photoPath,
+                                linkedUserId: fatherLink?.userId,
+                                isLinked: fatherLink != null,
                               ),
                             ),
                   ),
@@ -60,6 +68,7 @@ class FamilyOrgChart extends StatelessWidget {
                   _Node(
                     name: profile.motherName ?? 'Mother',
                     role: 'Mother',
+                    photoPath: motherLink?.photoPath,
                     muted: profile.motherName == null,
                     onTap: profile.motherName == null
                         ? null
@@ -71,6 +80,9 @@ class FamilyOrgChart extends StatelessWidget {
                                 role: 'Mother',
                                 kind: FamilyMemberKind.mother,
                                 familyName: profile.familyName,
+                                photoPath: motherLink?.photoPath,
+                                linkedUserId: motherLink?.userId,
+                                isLinked: motherLink != null,
                               ),
                             ),
                   ),
@@ -84,6 +96,7 @@ class FamilyOrgChart extends StatelessWidget {
                   ...elders.map(
                     (s) {
                       final index = profile.siblings.indexOf(s);
+                      final link = profile.memberLinks['sibling_$index'];
                       final role = s.gender == SiblingGender.male
                           ? 'Elder brother'
                           : 'Elder sister';
@@ -92,6 +105,7 @@ class FamilyOrgChart extends StatelessWidget {
                         child: _Node(
                           name: s.name,
                           role: role,
+                          photoPath: link?.photoPath,
                           onTap: () => _openMember(
                             context,
                             FamilyMemberDetail(
@@ -102,6 +116,9 @@ class FamilyOrgChart extends StatelessWidget {
                               genderLabel: s.gender == SiblingGender.male
                                   ? 'Male'
                                   : 'Female',
+                              photoPath: link?.photoPath,
+                              linkedUserId: link?.userId,
+                              isLinked: link != null,
                             ),
                           ),
                         ),
@@ -113,6 +130,7 @@ class FamilyOrgChart extends StatelessWidget {
                     role: 'You',
                     highlight: true,
                     photoHint: profile.photoPath != null,
+                    photoPath: profile.photoPath,
                     onTap: () => _openMember(
                       context,
                       FamilyMemberDetail(
@@ -129,6 +147,7 @@ class FamilyOrgChart extends StatelessWidget {
                   ...youngers.map(
                     (s) {
                       final index = profile.siblings.indexOf(s);
+                      final link = profile.memberLinks['sibling_$index'];
                       final role = s.gender == SiblingGender.male
                           ? 'Younger brother'
                           : 'Younger sister';
@@ -137,6 +156,7 @@ class FamilyOrgChart extends StatelessWidget {
                         child: _Node(
                           name: s.name,
                           role: role,
+                          photoPath: link?.photoPath,
                           onTap: () => _openMember(
                             context,
                             FamilyMemberDetail(
@@ -147,6 +167,9 @@ class FamilyOrgChart extends StatelessWidget {
                               genderLabel: s.gender == SiblingGender.male
                                   ? 'Male'
                                   : 'Female',
+                              photoPath: link?.photoPath,
+                              linkedUserId: link?.userId,
+                              isLinked: link != null,
                             ),
                           ),
                         ),
@@ -160,6 +183,7 @@ class FamilyOrgChart extends StatelessWidget {
                 _Node(
                   name: profile.spouse!.name,
                   role: 'Spouse · ${profile.spouse!.profession}',
+                  photoPath: spouseLink?.photoPath,
                   onTap: () => _openMember(
                     context,
                     FamilyMemberDetail(
@@ -170,6 +194,9 @@ class FamilyOrgChart extends StatelessWidget {
                       profession: profile.spouse!.profession,
                       age: profile.spouse!.age,
                       familyName: profile.spouse!.familyName,
+                      photoPath: spouseLink?.photoPath,
+                      linkedUserId: spouseLink?.userId,
+                      isLinked: spouseLink != null,
                     ),
                   ),
                 ),
@@ -184,6 +211,8 @@ class FamilyOrgChart extends StatelessWidget {
                       _Node(
                         name: profile.children[i].name,
                         role: 'Child · ${profile.children[i].age} yrs',
+                        photoPath:
+                            profile.memberLinks['child_$i']?.photoPath,
                         onTap: () => _openMember(
                           context,
                           FamilyMemberDetail(
@@ -192,6 +221,12 @@ class FamilyOrgChart extends StatelessWidget {
                             role: 'Child',
                             kind: FamilyMemberKind.child,
                             age: profile.children[i].age,
+                            photoPath:
+                                profile.memberLinks['child_$i']?.photoPath,
+                            linkedUserId:
+                                profile.memberLinks['child_$i']?.userId,
+                            isLinked:
+                                profile.memberLinks['child_$i'] != null,
                           ),
                         ),
                       ),
@@ -228,6 +263,7 @@ class _Node extends StatelessWidget {
     this.highlight = false,
     this.muted = false,
     this.photoHint = false,
+    this.photoPath,
     this.onTap,
   });
 
@@ -236,6 +272,7 @@ class _Node extends StatelessWidget {
   final bool highlight;
   final bool muted;
   final bool photoHint;
+  final String? photoPath;
   final VoidCallback? onTap;
 
   @override
@@ -268,13 +305,18 @@ class _Node extends StatelessWidget {
           ),
           child: Column(
             children: [
-              if (photoHint || highlight)
+              if (photoPath != null && photoPath!.isNotEmpty)
+                ProfileAvatar(photoPath: photoPath, radius: 18)
+              else if (photoHint || highlight)
                 Icon(
                   Icons.person_rounded,
                   size: 22,
                   color: highlight ? Colors.white : FalimyTheme.seed,
                 ),
-              if (photoHint || highlight) const SizedBox(height: 6),
+              if ((photoPath != null && photoPath!.isNotEmpty) ||
+                  photoHint ||
+                  highlight)
+                const SizedBox(height: 6),
               Text(
                 name,
                 textAlign: TextAlign.center,

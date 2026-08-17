@@ -17,6 +17,20 @@ class AuthSessionResult {
   final List<Map<String, dynamic>> claimedInvites;
 }
 
+class SignUpPendingResult {
+  const SignUpPendingResult({
+    required this.email,
+    this.devOtp,
+    this.emailDelivered = false,
+    this.message,
+  });
+
+  final String email;
+  final String? devOtp;
+  final bool emailDelivered;
+  final String? message;
+}
+
 class ApiAuthRepository implements AuthRepository {
   ApiAuthRepository({required ApiClient apiClient}) : _api = apiClient;
 
@@ -126,15 +140,104 @@ class ApiAuthRepository implements AuthRepository {
     );
   }
 
-  /// Sign up and return session extras (profile + claimed invites).
-  Future<AuthSessionResult> signUpWithSession({
+  /// Sign up: sends OTP and returns pending verification (no session yet).
+  Future<SignUpPendingResult> signUpWithSession({
     required String email,
     required String password,
-  }) {
-    return _authPost(
-      '/api/auth/sign-up',
-      email: email,
-      password: password,
+    String? referralCode,
+  }) async {
+    final json = await _api.postJson('/api/auth/sign-up', {
+      'email': email.trim(),
+      'password': password,
+      if (referralCode != null && referralCode.trim().isNotEmpty)
+        'referralCode': referralCode.trim().toUpperCase(),
+    });
+
+    if (json['needsVerification'] == true) {
+      return SignUpPendingResult(
+        email: (json['email'] as String?) ?? email.trim(),
+        devOtp: json['devOtp'] as String?,
+        emailDelivered: json['emailDelivered'] == true,
+        message: json['message'] as String?,
+      );
+    }
+
+    // Backward-compatible: if server still returns a token, treat as signed in.
+    final token = json['token'] as String?;
+    final userJson = json['user'] as Map<String, dynamic>?;
+    if (token != null && userJson != null) {
+      await _api.setToken(token);
+      final user = User(
+        id: userJson['id'] as String,
+        email: userJson['email'] as String? ?? '',
+      );
+      _user = user;
+      _controller.add(user);
+      throw ApiException(
+        'Account created without email verification. Please update the server.',
+      );
+    }
+
+    throw ApiException('Sign up failed');
+  }
+
+  Future<AuthSessionResult> verifyEmailWithSession({
+    required String email,
+    required String otp,
+  }) async {
+    final json = await _api.postJson('/api/auth/verify-email', {
+      'email': email.trim(),
+      'otp': otp.trim(),
+    });
+
+    final token = json['token'] as String?;
+    final userJson = json['user'] as Map<String, dynamic>?;
+    if (token == null || userJson == null) {
+      throw ApiException('Verification failed');
+    }
+
+    await _api.setToken(token);
+    final user = User(
+      id: userJson['id'] as String,
+      email: userJson['email'] as String? ?? '',
+    );
+    _user = user;
+    _controller.add(user);
+
+    final profileJson = json['profile'];
+    FamilyProfile? profile;
+    if (profileJson is Map<String, dynamic>) {
+      profile = FamilyProfileMapper.fromJson(profileJson);
+    }
+
+    final claimed = <Map<String, dynamic>>[];
+    final rawClaimed = json['claimedInvites'];
+    if (rawClaimed is List) {
+      for (final item in rawClaimed) {
+        if (item is Map<String, dynamic>) {
+          claimed.add(item);
+        } else if (item is Map) {
+          claimed.add(Map<String, dynamic>.from(item));
+        }
+      }
+    }
+
+    return AuthSessionResult(
+      user: user,
+      profile: profile,
+      claimedInvites: claimed,
+    );
+  }
+
+  Future<SignUpPendingResult> resendOtp({required String email}) async {
+    final json = await _api.postJson('/api/auth/resend-otp', {
+      'email': email.trim(),
+    });
+    return SignUpPendingResult(
+      email: (json['email'] as String?) ?? email.trim(),
+      devOtp: json['devOtp'] as String?,
+      emailDelivered: json['emailDelivered'] == true,
+      message: json['message'] as String?,
     );
   }
 
@@ -152,8 +255,8 @@ class ApiAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    final session = await signUpWithSession(email: email, password: password);
-    return session.user;
+    await signUpWithSession(email: email, password: password);
+    throw ApiException('Verify your email to finish creating your account');
   }
 
   @override
@@ -207,6 +310,45 @@ class FamilyProfileMapper {
       );
     }
 
+    String? linkedInviterName;
+    String? linkedMemberKind;
+    String? linkedMemberRole;
+    String? spouseSuggestionRole;
+    final linkedRaw = data['linkedFromInvites'];
+    if (linkedRaw is List && linkedRaw.isNotEmpty) {
+      final first = linkedRaw.first;
+      if (first is Map) {
+        final map = Map<String, dynamic>.from(first);
+        linkedInviterName = map['inviterName'] as String?;
+        linkedMemberKind = map['memberKind'] as String?;
+        linkedMemberRole = map['memberRole'] as String?;
+        spouseSuggestionRole = map['spouseSuggestionRole'] as String?;
+        final suggestedName = (map['spouseSuggestionName'] as String?)?.trim();
+        if ((spouse == null || spouse.name.trim().isEmpty) &&
+            suggestedName != null &&
+            suggestedName.isNotEmpty) {
+          spouse = Spouse(
+            name: suggestedName,
+            profession: '',
+            age: 0,
+            familyName: (map['familyName'] as String?) ?? '',
+          );
+        }
+      }
+    }
+
+    // Father invite from a child → spouse is Mother if not already labeled.
+    if ((spouseSuggestionRole == null || spouseSuggestionRole.isEmpty) &&
+        (linkedMemberKind ?? '').toLowerCase() == 'father' &&
+        (spouse?.name.trim().isNotEmpty ?? false)) {
+      spouseSuggestionRole = 'Mother';
+    }
+    if ((spouseSuggestionRole == null || spouseSuggestionRole.isEmpty) &&
+        (linkedMemberKind ?? '').toLowerCase() == 'mother' &&
+        (spouse?.name.trim().isNotEmpty ?? false)) {
+      spouseSuggestionRole = 'Father';
+    }
+
     final children = <Child>[];
     final childrenRaw = data['children'];
     if (childrenRaw is List) {
@@ -218,6 +360,26 @@ class FamilyProfileMapper {
             name: (map['name'] as String?) ?? '',
             age: (map['age'] as num?)?.toInt() ?? 0,
           ),
+        );
+      }
+    }
+
+    final memberLinks = <String, LinkedFamilyMember>{};
+    final memberLinksRaw = data['memberLinks'];
+    if (memberLinksRaw is Map) {
+      for (final entry in memberLinksRaw.entries) {
+        final value = entry.value;
+        if (value is! Map) continue;
+        final map = Map<String, dynamic>.from(value);
+        final userId = (map['userId'] as String?)?.trim() ?? '';
+        if (userId.isEmpty) continue;
+        memberLinks[entry.key.toString()] = LinkedFamilyMember(
+          userId: userId,
+          name: (map['name'] as String?) ?? '',
+          kind: (map['kind'] as String?) ?? '',
+          role: (map['role'] as String?) ?? '',
+          email: map['email'] as String?,
+          photoPath: map['photoPath'] as String?,
         );
       }
     }
@@ -235,7 +397,24 @@ class FamilyProfileMapper {
       hasChildren: data['hasChildren'] as bool?,
       children: children,
       onboardingComplete: data['onboardingComplete'] as bool? ?? false,
+      occupationStatus: _parseOccupationStatus(data['occupationStatus']),
+      companyName: data['companyName'] as String?,
+      salary: data['salary'] as num?,
+      studyClassOrCourse: data['studyClassOrCourse'] as String?,
+      linkedInviterName: linkedInviterName,
+      linkedMemberKind: linkedMemberKind,
+      linkedMemberRole: linkedMemberRole,
+      spouseSuggestionRole: spouseSuggestionRole,
+      memberLinks: memberLinks,
     );
+  }
+
+  static OccupationStatus? _parseOccupationStatus(dynamic raw) {
+    if (raw is! String) return null;
+    for (final status in OccupationStatus.values) {
+      if (status.name == raw) return status;
+    }
+    return null;
   }
 
   static Map<String, dynamic> toJson(FamilyProfile profile) {
@@ -269,6 +448,10 @@ class FamilyProfileMapper {
           .map((c) => {'name': c.name, 'age': c.age})
           .toList(),
       'onboardingComplete': profile.onboardingComplete,
+      'occupationStatus': profile.occupationStatus?.name,
+      'companyName': profile.companyName,
+      'salary': profile.salary,
+      'studyClassOrCourse': profile.studyClassOrCourse,
     };
   }
 }

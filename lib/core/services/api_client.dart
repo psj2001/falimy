@@ -7,10 +7,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:falimy/core/config/api_config.dart';
 
 class ApiException implements Exception {
-  ApiException(this.message, {this.statusCode});
+  ApiException(this.message, {this.statusCode, this.body = const {}});
 
   final String message;
   final int? statusCode;
+  final Map<String, dynamic> body;
+
+  bool get needsVerification => body['needsVerification'] == true;
+
+  String? get email => body['email'] as String?;
 
   @override
   String toString() => message;
@@ -91,6 +96,18 @@ class ApiClient {
     return _decode(response);
   }
 
+  Future<Map<String, dynamic>> patchJson(
+    String path, [
+    Map<String, dynamic>? body,
+  ]) async {
+    final response = await _client.patch(
+      _uri(path),
+      headers: _headers(jsonBody: true),
+      body: jsonEncode(body ?? const {}),
+    );
+    return _decode(response);
+  }
+
   Future<void> delete(String path) async {
     final response = await _client.delete(_uri(path), headers: _headers());
     if (response.statusCode >= 200 && response.statusCode < 300) return;
@@ -116,7 +133,7 @@ class ApiClient {
 
     final message = (json['message'] as String?) ??
         'Request failed (${response.statusCode})';
-    throw ApiException(message, statusCode: response.statusCode);
+    throw ApiException(message, statusCode: response.statusCode, body: json);
   }
 
   void dispose() {

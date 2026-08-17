@@ -7,20 +7,69 @@ import '../../../../core/constants/app_routes.dart';
 import '../../../../core/widgets/onboarding_scaffold.dart';
 import '../providers/onboarding_notifier.dart';
 
-class MarriedQuestionScreen extends ConsumerWidget {
+class MarriedQuestionScreen extends ConsumerStatefulWidget {
   const MarriedQuestionScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MarriedQuestionScreen> createState() =>
+      _MarriedQuestionScreenState();
+}
+
+class _MarriedQuestionScreenState extends ConsumerState<MarriedQuestionScreen> {
+  bool _skipped = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _skipIfSpouseKnown());
+  }
+
+  /// A spouse coming from the inviter's tree already answers this question.
+  Future<void> _skipIfSpouseKnown() async {
+    if (_skipped) return;
+    await ref.read(onboardingNotifierProvider.notifier).ensureLoaded();
+    if (!mounted) return;
+    if (!ref.read(onboardingNotifierProvider).hasInviteSpouseSuggestion) return;
+
+    _skipped = true;
+    await ref.read(onboardingNotifierProvider.notifier).setMarried(true);
+    if (!mounted) return;
+    context.pushReplacement(AppRoutes.spouse);
+  }
+
+  String _subtitle() {
+    final profile = ref.watch(onboardingNotifierProvider);
+    final spouseName = profile.spouse?.name.trim() ?? '';
+    final role = profile.spouseSuggestionRole?.trim() ?? '';
+    final inviter = profile.linkedInviterName?.trim() ?? '';
+    final kind = (profile.linkedMemberKind ?? '').toLowerCase();
+
+    if (kind == 'father' && spouseName.isNotEmpty) {
+      final from = inviter.isEmpty ? "your child's family tree" : "$inviter's family tree";
+      return 'From $from, your spouse is identified as Mother: $spouseName';
+    }
+    if (kind == 'mother' && spouseName.isNotEmpty) {
+      final from = inviter.isEmpty ? "your child's family tree" : "$inviter's family tree";
+      return 'From $from, your spouse is identified as Father: $spouseName';
+    }
+    if (role.isNotEmpty && spouseName.isNotEmpty) {
+      return 'Your spouse is identified as $role: $spouseName';
+    }
+    return 'This helps us build your family tree';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return OnboardingScaffold(
       title: 'Are you married?',
-      subtitle: 'This helps us build your family tree',
+      subtitle: _subtitle(),
       child: Column(
         children: [
           const Spacer(),
           _ChoiceButton(
             label: 'Yes',
             onPressed: () async {
+              await ref.read(onboardingNotifierProvider.notifier).ensureLoaded();
               await ref.read(onboardingNotifierProvider.notifier).setMarried(true);
               if (context.mounted) context.push(AppRoutes.spouse);
             },

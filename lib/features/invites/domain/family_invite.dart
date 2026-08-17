@@ -14,6 +14,8 @@ class FamilyInvite {
     this.status = InviteStatus.pending,
     this.acceptedUserId,
     this.createdAt,
+    this.spouseSuggestionName,
+    this.spouseSuggestionRole,
   });
 
   final String id;
@@ -28,4 +30,6 @@ class FamilyInvite {
   final InviteStatus status;
   final String? acceptedUserId;
   final DateTime? createdAt;
+  final String? spouseSuggestionName;
+  final String? spouseSuggestionRole;
 }

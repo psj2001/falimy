@@ -71,7 +71,7 @@ class _ParentsSiblingsScreenState extends ConsumerState<ParentsSiblingsScreen> {
     });
   }
 
-  void _continue() {
+  Future<void> _continue() async {
     if (!_formKey.currentState!.validate()) return;
 
     final siblings = _siblings
@@ -84,11 +84,20 @@ class _ParentsSiblingsScreenState extends ConsumerState<ParentsSiblingsScreen> {
         )
         .toList();
 
-    ref.read(onboardingNotifierProvider.notifier).setParents(
-          fatherName: _fatherController.text,
-          motherName: _motherController.text,
-          siblings: siblings,
-        );
+    final notifier = ref.read(onboardingNotifierProvider.notifier);
+    notifier.setParents(
+      fatherName: _fatherController.text,
+      motherName: _motherController.text,
+      siblings: siblings,
+    );
+
+    if (ref.read(onboardingNotifierProvider).hasInviteSpouseSuggestion) {
+      await notifier.setMarried(true);
+      if (!mounted) return;
+      context.push(AppRoutes.spouse);
+      return;
+    }
+
     context.push(AppRoutes.married);
   }
 

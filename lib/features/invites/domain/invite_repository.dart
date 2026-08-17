@@ -7,6 +7,7 @@ class InviteSendResult {
     required this.memberName,
     required this.memberRole,
     required this.inviterName,
+    this.referralCode,
   });
 
   final String inviteeEmail;
@@ -14,6 +15,25 @@ class InviteSendResult {
   final String memberName;
   final String memberRole;
   final String inviterName;
+  final String? referralCode;
+}
+
+class ReferralPreview {
+  const ReferralPreview({
+    required this.inviterName,
+    required this.memberName,
+    required this.memberRole,
+    required this.memberKind,
+    this.familyName,
+    this.inviteeEmailHint,
+  });
+
+  final String inviterName;
+  final String memberName;
+  final String memberRole;
+  final String memberKind;
+  final String? familyName;
+  final String? inviteeEmailHint;
 }
 
 abstract class InviteRepository {
@@ -25,6 +45,8 @@ abstract class InviteRepository {
     required String memberRole,
     String? familyName,
   });
+
+  Future<ReferralPreview> resolveReferral(String code);
 
   /// Pending invites addressed to [email], if any.
   Future<List<FamilyInvite>> findPendingByEmail(String email);

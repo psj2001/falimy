@@ -37,7 +37,9 @@ class _ChildrenDetailsScreenState extends ConsumerState<ChildrenDetailsScreen> {
     _ageControllers = List.generate(
       widget.count,
       (i) => TextEditingController(
-        text: i < existing.length ? existing[i].age.toString() : '',
+        text: i < existing.length && existing[i].age > 0
+            ? existing[i].age.toString()
+            : '',
       ),
     );
   }
@@ -72,7 +74,11 @@ class _ChildrenDetailsScreenState extends ConsumerState<ChildrenDetailsScreen> {
   Widget build(BuildContext context) {
     return OnboardingScaffold(
       title: 'Children details',
-      subtitle: 'Enter name and age for each child',
+      subtitle: ref
+              .watch(onboardingNotifierProvider)
+              .hasInviteChildrenSuggestion
+          ? 'Children were added from the inviter\'s family tree. Confirm their names and ages.'
+          : 'Enter name and age for each child',
       bottom: PrimaryButton(label: 'Finish', onPressed: _continue),
       child: Form(
         key: _formKey,

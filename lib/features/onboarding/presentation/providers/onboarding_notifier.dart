@@ -39,6 +39,13 @@ class OnboardingNotifier extends Notifier<FamilyProfile> {
     await _loadFuture;
   }
 
+  Future<void> reload() async {
+    final userId = ref.read(authNotifierProvider).user?.id;
+    if (userId == null) return;
+    _loadFuture = _hydrate(userId);
+    await _loadFuture;
+  }
+
   Future<void> _hydrate(String userId) async {
     try {
       final profile =
@@ -70,6 +77,49 @@ class OnboardingNotifier extends Notifier<FamilyProfile> {
     );
   }
 
+  void applyInviteDefaults({
+    required String fullName,
+    String? familyName,
+    String? linkedInviterName,
+    String? linkedMemberKind,
+    String? linkedMemberRole,
+    String? spouseSuggestionName,
+    String? spouseSuggestionRole,
+  }) {
+    final invitedName = fullName.trim();
+    final invitedFamilyName = familyName?.trim() ?? '';
+    final suggestedSpouseName = spouseSuggestionName?.trim() ?? '';
+    final existingSpouseName = state.spouse?.name.trim() ?? '';
+
+    Spouse? spouse = state.spouse;
+    if (existingSpouseName.isEmpty && suggestedSpouseName.isNotEmpty) {
+      spouse = Spouse(
+        name: suggestedSpouseName,
+        profession: state.spouse?.profession ?? '',
+        age: state.spouse?.age ?? 0,
+        familyName: invitedFamilyName.isNotEmpty
+            ? invitedFamilyName
+            : (state.spouse?.familyName ?? state.familyName ?? ''),
+      );
+    }
+
+    _set(
+      state.copyWith(
+        fullName: (state.fullName?.trim().isNotEmpty ?? false)
+            ? state.fullName
+            : invitedName,
+        familyName: (state.familyName?.trim().isNotEmpty ?? false)
+            ? state.familyName
+            : (invitedFamilyName.isEmpty ? null : invitedFamilyName),
+        spouse: spouse,
+        linkedInviterName: linkedInviterName ?? state.linkedInviterName,
+        linkedMemberKind: linkedMemberKind ?? state.linkedMemberKind,
+        linkedMemberRole: linkedMemberRole ?? state.linkedMemberRole,
+        spouseSuggestionRole: spouseSuggestionRole ?? state.spouseSuggestionRole,
+      ),
+    );
+  }
+
   void setPhoto(String? path) {
     if (path == null) {
       _set(state.copyWith(clearPhoto: true));
@@ -88,6 +138,62 @@ class OnboardingNotifier extends Notifier<FamilyProfile> {
         fatherName: fatherName.trim(),
         motherName: motherName.trim(),
         siblings: siblings,
+      ),
+    );
+  }
+
+  void setWorking(bool isWorking) {
+    if (isWorking) {
+      _set(
+        state.copyWith(
+          occupationStatus: OccupationStatus.working,
+          clearStudyClassOrCourse: true,
+        ),
+      );
+    } else {
+      _set(
+        state.copyWith(
+          clearOccupationStatus: true,
+          clearCompanyName: true,
+          clearSalary: true,
+          clearStudyClassOrCourse: true,
+        ),
+      );
+    }
+  }
+
+  void setOccupationStatus(OccupationStatus status) {
+    _set(
+      state.copyWith(
+        occupationStatus: status,
+        clearCompanyName: true,
+        clearSalary: true,
+        clearStudyClassOrCourse: true,
+      ),
+    );
+  }
+
+  void setWorkDetails({
+    required String companyName,
+    num? salary,
+  }) {
+    _set(
+      state.copyWith(
+        occupationStatus: OccupationStatus.working,
+        companyName: companyName.trim(),
+        salary: salary,
+        clearStudyClassOrCourse: true,
+      ),
+    );
+  }
+
+  void setStudyDetails(String studyClassOrCourse) {
+    _set(
+      state.copyWith(
+        occupationStatus: OccupationStatus.studying,
+        studyClassOrCourse: studyClassOrCourse.trim(),
+        clearCompanyName: true,
+        clearSalary: true,
       ),
     );
   }

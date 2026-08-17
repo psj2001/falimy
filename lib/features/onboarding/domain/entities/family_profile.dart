@@ -4,6 +4,8 @@ enum SiblingGender { male, female }
 
 enum SiblingSeniority { elder, younger }
 
+enum OccupationStatus { working, studying, unemployed, retired }
+
 class Sibling extends Equatable {
   const Sibling({
     required this.name,
@@ -79,6 +81,27 @@ class Child extends Equatable {
   List<Object?> get props => [name, age];
 }
 
+class LinkedFamilyMember extends Equatable {
+  const LinkedFamilyMember({
+    required this.userId,
+    required this.name,
+    required this.kind,
+    required this.role,
+    this.email,
+    this.photoPath,
+  });
+
+  final String userId;
+  final String name;
+  final String kind;
+  final String role;
+  final String? email;
+  final String? photoPath;
+
+  @override
+  List<Object?> get props => [userId, name, kind, role, email, photoPath];
+}
+
 class FamilyProfile extends Equatable {
   const FamilyProfile({
     this.fullName,
@@ -93,6 +116,15 @@ class FamilyProfile extends Equatable {
     this.hasChildren,
     this.children = const [],
     this.onboardingComplete = false,
+    this.occupationStatus,
+    this.companyName,
+    this.salary,
+    this.studyClassOrCourse,
+    this.linkedInviterName,
+    this.linkedMemberKind,
+    this.linkedMemberRole,
+    this.spouseSuggestionRole,
+    this.memberLinks = const {},
   });
 
   final String? fullName;
@@ -107,6 +139,28 @@ class FamilyProfile extends Equatable {
   final bool? hasChildren;
   final List<Child> children;
   final bool onboardingComplete;
+  final OccupationStatus? occupationStatus;
+  final String? companyName;
+  final num? salary;
+  final String? studyClassOrCourse;
+  final String? linkedInviterName;
+  final String? linkedMemberKind;
+  final String? linkedMemberRole;
+  final String? spouseSuggestionRole;
+  final Map<String, LinkedFamilyMember> memberLinks;
+
+  bool get hasInviteSpouseSuggestion {
+    final name = spouse?.name.trim() ?? '';
+    if (name.isEmpty) return false;
+    if ((spouseSuggestionRole?.trim().isNotEmpty ?? false)) return true;
+    final kind = linkedMemberKind?.trim().toLowerCase();
+    return kind == 'father' || kind == 'mother';
+  }
+
+  bool get hasInviteChildrenSuggestion {
+    final kind = linkedMemberKind?.trim().toLowerCase();
+    return children.isNotEmpty && (kind == 'father' || kind == 'mother');
+  }
 
   FamilyProfile copyWith({
     String? fullName,
@@ -123,6 +177,19 @@ class FamilyProfile extends Equatable {
     bool? hasChildren,
     List<Child>? children,
     bool? onboardingComplete,
+    OccupationStatus? occupationStatus,
+    bool clearOccupationStatus = false,
+    String? companyName,
+    bool clearCompanyName = false,
+    num? salary,
+    bool clearSalary = false,
+    String? studyClassOrCourse,
+    bool clearStudyClassOrCourse = false,
+    String? linkedInviterName,
+    String? linkedMemberKind,
+    String? linkedMemberRole,
+    String? spouseSuggestionRole,
+    Map<String, LinkedFamilyMember>? memberLinks,
   }) {
     return FamilyProfile(
       fullName: fullName ?? this.fullName,
@@ -137,6 +204,20 @@ class FamilyProfile extends Equatable {
       hasChildren: hasChildren ?? this.hasChildren,
       children: children ?? this.children,
       onboardingComplete: onboardingComplete ?? this.onboardingComplete,
+      occupationStatus: clearOccupationStatus
+          ? null
+          : (occupationStatus ?? this.occupationStatus),
+      companyName:
+          clearCompanyName ? null : (companyName ?? this.companyName),
+      salary: clearSalary ? null : (salary ?? this.salary),
+      studyClassOrCourse: clearStudyClassOrCourse
+          ? null
+          : (studyClassOrCourse ?? this.studyClassOrCourse),
+      linkedInviterName: linkedInviterName ?? this.linkedInviterName,
+      linkedMemberKind: linkedMemberKind ?? this.linkedMemberKind,
+      linkedMemberRole: linkedMemberRole ?? this.linkedMemberRole,
+      spouseSuggestionRole: spouseSuggestionRole ?? this.spouseSuggestionRole,
+      memberLinks: memberLinks ?? this.memberLinks,
     );
   }
 
@@ -154,5 +235,14 @@ class FamilyProfile extends Equatable {
         hasChildren,
         children,
         onboardingComplete,
+        occupationStatus,
+        companyName,
+        salary,
+        studyClassOrCourse,
+        linkedInviterName,
+        linkedMemberKind,
+        linkedMemberRole,
+        spouseSuggestionRole,
+        memberLinks,
       ];
 }

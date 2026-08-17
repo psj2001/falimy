@@ -27,16 +27,22 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
     required String inviterName,
     required String memberName,
     required String memberRole,
+    String? referralCode,
   }) async {
     final subject = Uri.encodeComponent(
       '$inviterName invited you to Falimy as $memberName',
     );
+    final codeLine = referralCode == null || referralCode.isEmpty
+        ? ''
+        : 'Your referral code is: $referralCode\n\n'
+            'On Sign up, choose Join with a referral code and enter this code.\n\n';
     final body = Uri.encodeComponent(
       'Hi $memberName,\n\n'
       '$inviterName invited you to join their family tree on Falimy as "$memberRole".\n\n'
+      '$codeLine'
       '1. Install the Falimy app\n'
       '2. Create an account using this email: $to\n'
-      '3. You will automatically be linked to their family tree\n\n'
+      '3. You will be linked to their family tree\n\n'
       '— Falimy',
     );
     final uri = Uri.parse('mailto:$to?subject=$subject&body=$body');
@@ -45,7 +51,7 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
         return launchUrl(uri);
       }
     } catch (_) {
-      // Simulator often has no Mail app — invite is still saved in Firestore.
+      // Simulator often has no Mail app — invite is still saved.
     }
     return false;
   }
@@ -91,7 +97,7 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Enter their Gmail. They will install Falimy and sign up with this email to be linked as ${member.role}.',
+                  'Enter their email. We will send an invite with a referral code so they can join as ${member.role}.',
                   style: Theme.of(ctx).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 20),
@@ -149,20 +155,29 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
           inviterName: result.inviterName,
           memberName: result.memberName,
           memberRole: result.memberRole,
+          referralCode: result.referralCode,
         );
         if (!mounted) return;
+        final codeHint = result.referralCode == null || result.referralCode!.isEmpty
+            ? ''
+            : ' Referral code: ${result.referralCode}.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               openedMail
-                  ? 'Invite saved. Finish sending the email to ${result.inviteeEmail}.'
-                  : 'Invite saved for ${result.inviteeEmail}. They can join with that email.',
+                  ? 'Invite saved. Finish sending the email to ${result.inviteeEmail}.$codeHint'
+                  : 'Invite saved for ${result.inviteeEmail}.$codeHint They can join with that email and code.',
             ),
           ),
         );
       } else {
+        final codeHint = result.referralCode == null || result.referralCode!.isEmpty
+            ? ''
+            : ' Referral code: ${result.referralCode}.';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Invite sent to ${result.inviteeEmail}')),
+          SnackBar(
+            content: Text('Invite emailed to ${result.inviteeEmail}.$codeHint'),
+          ),
         );
       }
     } catch (e) {
@@ -181,6 +196,8 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
     final member = widget.member;
     final rows = <_DetailRow>[
       _DetailRow(label: 'Relationship', value: member.role),
+      if (member.isLinked)
+        const _DetailRow(label: 'Falimy account', value: 'Joined'),
       if (member.familyName != null && member.familyName!.trim().isNotEmpty)
         _DetailRow(label: 'Family name', value: member.familyName!),
       if (member.dateOfBirth != null)
@@ -315,7 +332,7 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'They will join Falimy with their email and be identified as ${member.name}.',
+                    'They will get an email with a referral code and join as ${member.name}.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),

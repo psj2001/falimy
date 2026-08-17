@@ -10,6 +10,7 @@ import '../../../../core/widgets/onboarding_scaffold.dart';
 import '../../../../core/widgets/photo_source_sheet.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/profile_avatar.dart';
+import '../../domain/entities/family_profile.dart';
 import '../providers/onboarding_notifier.dart';
 
 class BasicInfoScreen extends ConsumerStatefulWidget {
@@ -31,12 +32,39 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
   void initState() {
     super.initState();
     final profile = ref.read(onboardingNotifierProvider);
-    _fullNameController.text = profile.fullName ?? '';
-    _familyNameController.text = profile.familyName ?? '';
-    _dob = profile.dateOfBirth;
-    _photoPath = profile.photoPath;
-    if (_dob != null) {
+    _applyProfileDefaults(profile);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(onboardingNotifierProvider.notifier).ensureLoaded();
+      if (!mounted) return;
+      _applyProfileDefaults(ref.read(onboardingNotifierProvider));
+    });
+  }
+
+  void _applyProfileDefaults(FamilyProfile profile) {
+    var changed = false;
+    final fullName = profile.fullName?.trim() ?? '';
+    final familyName = profile.familyName?.trim() ?? '';
+
+    if (_fullNameController.text.trim().isEmpty && fullName.isNotEmpty) {
+      _fullNameController.text = fullName;
+      changed = true;
+    }
+    if (_familyNameController.text.trim().isEmpty && familyName.isNotEmpty) {
+      _familyNameController.text = familyName;
+      changed = true;
+    }
+    if (_dob == null && profile.dateOfBirth != null) {
+      _dob = profile.dateOfBirth;
       _dobController.text = DateFormat.yMMMMd().format(_dob!);
+      changed = true;
+    }
+    if (_photoPath == null && profile.photoPath != null) {
+      _photoPath = profile.photoPath;
+      changed = true;
+    }
+
+    if (changed && mounted) {
+      setState(() {});
     }
   }
 
@@ -98,11 +126,15 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
           familyName: _familyNameController.text,
           photoPath: _photoPath,
         );
-    context.push(AppRoutes.parents);
+    context.push(AppRoutes.working);
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<FamilyProfile>(onboardingNotifierProvider, (_, profile) {
+      _applyProfileDefaults(profile);
+    });
+
     return OnboardingScaffold(
       title: 'About you',
       subtitle: 'Tell us your name and family details',

@@ -20,6 +20,14 @@ const inviteSchema = new mongoose.Schema(
     memberKind: { type: String, required: true },
     memberRole: { type: String, required: true },
     familyName: String,
+    referralCode: {
+      type: String,
+      uppercase: true,
+      trim: true,
+      index: true,
+      unique: true,
+      sparse: true,
+    },
     status: {
       type: String,
       enum: ['pending', 'accepted', 'cancelled'],

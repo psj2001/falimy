@@ -20,6 +20,8 @@ class FamilyMemberDetail {
     this.profession,
     this.age,
     this.genderLabel,
+    this.linkedUserId,
+    this.isLinked = false,
   });
 
   /// Stable slot id within the inviter's tree (e.g. father, sibling_0).
@@ -33,6 +35,8 @@ class FamilyMemberDetail {
   final String? profession;
   final int? age;
   final String? genderLabel;
+  final String? linkedUserId;
+  final bool isLinked;
 
-  bool get canInvite => kind != FamilyMemberKind.self;
+  bool get canInvite => kind != FamilyMemberKind.self && !isLinked;
 }

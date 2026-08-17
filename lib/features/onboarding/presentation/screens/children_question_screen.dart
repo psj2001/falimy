@@ -7,11 +7,42 @@ import '../../../../core/constants/app_routes.dart';
 import '../../../../core/widgets/onboarding_scaffold.dart';
 import '../providers/onboarding_notifier.dart';
 
-class ChildrenQuestionScreen extends ConsumerWidget {
+class ChildrenQuestionScreen extends ConsumerStatefulWidget {
   const ChildrenQuestionScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ChildrenQuestionScreen> createState() =>
+      _ChildrenQuestionScreenState();
+}
+
+class _ChildrenQuestionScreenState
+    extends ConsumerState<ChildrenQuestionScreen> {
+  bool _skipped = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _skipIfKnown());
+  }
+
+  Future<void> _skipIfKnown() async {
+    if (_skipped) return;
+    await ref.read(onboardingNotifierProvider.notifier).ensureLoaded();
+    if (!mounted) return;
+    final profile = ref.read(onboardingNotifierProvider);
+    if (!profile.hasInviteChildrenSuggestion) return;
+
+    _skipped = true;
+    await ref.read(onboardingNotifierProvider.notifier).setHasChildren(true);
+    if (!mounted) return;
+    context.pushReplacement(
+      AppRoutes.childrenDetails,
+      extra: profile.children.length,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return OnboardingScaffold(
       title: 'Do you have children?',
       subtitle: 'We\'ll collect their details next if you do',

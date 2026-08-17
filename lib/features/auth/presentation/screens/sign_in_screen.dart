@@ -36,7 +36,19 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         );
     if (!mounted) return;
     if (!ok) {
-      final error = ref.read(authNotifierProvider).error;
+      final auth = ref.read(authNotifierProvider);
+      final error = auth.error;
+      if (auth.needsEmailVerification) {
+        final email =
+            auth.pendingVerificationEmail ?? _emailController.text.trim();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error ?? 'Verify your email to continue')),
+        );
+        context.go(
+          '${AppRoutes.verifyEmail}?email=${Uri.encodeComponent(email)}',
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error ?? 'Sign in failed')),
       );
@@ -48,6 +60,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       await ref.read(onboardingNotifierProvider.notifier).ensureLoaded();
       if (!mounted) return;
       final first = claimed.first;
+      ref.read(onboardingNotifierProvider.notifier).applyInviteDefaults(
+            fullName: first.memberName,
+            familyName: first.familyName,
+            linkedInviterName: first.inviterName,
+            linkedMemberKind: first.memberKind,
+            linkedMemberRole: first.memberRole,
+            spouseSuggestionName: first.spouseSuggestionName,
+            spouseSuggestionRole: first.spouseSuggestionRole,
+          );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

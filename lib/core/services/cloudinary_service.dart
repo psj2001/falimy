@@ -28,19 +28,23 @@ class CloudinaryService {
       throw CloudinaryException('Photo file not found');
     }
 
-    // Unsigned presets disallow `overwrite`. Keep only allowed fields.
+    // Unsigned uploads always run with `overwrite=false`, so reusing a fixed
+    // public_id makes Cloudinary skip the upload and echo back the old asset
+    // (`existing: true`). A fresh id per upload is what makes replacing work.
+    final publicId = 'avatar_${DateTime.now().millisecondsSinceEpoch}';
+
     final request = http.MultipartRequest(
       'POST',
       Uri.parse(CloudinaryConfig.uploadUrl),
     )
       ..fields['upload_preset'] = CloudinaryConfig.uploadPreset
       ..fields['folder'] = 'falimy/users/$userId'
-      ..fields['public_id'] = 'avatar'
+      ..fields['public_id'] = publicId
       ..files.add(
         await http.MultipartFile.fromPath(
           'file',
           localPath,
-          filename: 'avatar.jpg',
+          filename: '$publicId.jpg',
         ),
       );
 
@@ -54,6 +58,11 @@ class CloudinaryService {
     }
 
     final json = jsonDecode(body) as Map<String, dynamic>;
+    if (json['existing'] == true) {
+      throw CloudinaryException(
+        'Cloudinary skipped the upload because that image id already exists',
+      );
+    }
     final url = json['secure_url'] as String?;
     if (url == null || url.isEmpty) {
       throw CloudinaryException('Cloudinary response missing secure_url');
