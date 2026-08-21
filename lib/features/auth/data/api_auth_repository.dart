@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:falimy/core/services/api_client.dart';
 import 'package:falimy/features/auth/domain/entities/user.dart';
@@ -38,6 +39,7 @@ class ApiAuthRepository implements AuthRepository {
   User? _user;
   final _controller = StreamController<User?>.broadcast();
   bool _initialized = false;
+  Future<void>? _restoreFuture;
 
   @override
   User? get currentUser => _user;
@@ -51,36 +53,102 @@ class ApiAuthRepository implements AuthRepository {
     yield* _controller.stream;
   }
 
-  Future<void> restore() async {
+  Future<void> restore() {
+    return _restoreFuture ??= _restore();
+  }
+
+  Future<void> _restore() async {
     await _api.restoreSession();
-    if (_api.token == null || _api.token!.isEmpty) {
+    final token = _api.token;
+    if (token == null || token.isEmpty) {
       _user = null;
       _initialized = true;
       _controller.add(null);
       return;
     }
 
+    _user = _userFromCache() ?? _userFromToken(token);
+    _initialized = true;
+    _controller.add(_user);
+    unawaited(_validateSession());
+  }
+
+  User? _userFromCache() {
+    final cached = _api.cachedUser;
+    if (cached == null) return null;
+    final user = User.fromJson(cached);
+    if (user.id.isEmpty) return null;
+    return user;
+  }
+
+  User? _userFromToken(String token) {
     try {
-      final json = await _api.getJson('/api/auth/me');
-      final userJson = json['user'] as Map<String, dynamic>?;
-      if (userJson == null) {
-        await _api.clearToken();
-        _user = null;
-      } else {
-        _user = User(
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      final payload = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
+      final json = jsonDecode(payload);
+      if (json is! Map) return null;
+      final id = json['sub'] as String?;
+      if (id == null || id.isEmpty) return null;
+      return User(id: id, email: json['email'] as String? ?? '');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _validateSession() async {
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        final json = await _api.getJson(
+          '/api/auth/me',
+          timeout: Duration(seconds: 20 + (attempt * 15)),
+        );
+        final userJson = json['user'] as Map<String, dynamic>?;
+        if (userJson == null) {
+          break;
+        }
+        final user = User(
           id: userJson['id'] as String,
           email: userJson['email'] as String? ?? '',
         );
+        _user = user;
+        await _api.cacheUser(user.toJson());
+        final refreshed = json['token'] as String?;
+        if (refreshed != null && refreshed.isNotEmpty) {
+          await _api.setToken(refreshed);
+        }
+        _controller.add(user);
+        return;
+      } on ApiException catch (e) {
+        if (e.statusCode == 401) {
+          await _api.clearToken();
+          _user = null;
+          _controller.add(null);
+          return;
+        }
+      } catch (_) {}
+      if (attempt < 2) {
+        await Future<void>.delayed(Duration(seconds: 2 * (attempt + 1)));
       }
-    } catch (_) {
-      await _api.clearToken();
-      _user = null;
     }
-    _initialized = true;
-    _controller.add(_user);
+
+    // Network / server errors must not log the user out.
+    if (_user != null) {
+      _controller.add(_user);
+    }
   }
 
-  Future<AuthSessionResult> _authPost(String path, {
+  Future<void> _persistSession(String token, User user) async {
+    await _api.setToken(token);
+    await _api.cacheUser(user.toJson());
+    _user = user;
+    _controller.add(user);
+  }
+
+  Future<AuthSessionResult> _authPost(
+    String path, {
     required String email,
     required String password,
   }) async {
@@ -95,13 +163,14 @@ class ApiAuthRepository implements AuthRepository {
       throw ApiException('Authentication failed');
     }
 
-    await _api.setToken(token);
-    final user = User(
-      id: userJson['id'] as String,
-      email: userJson['email'] as String? ?? '',
+    await _persistSession(
+      token,
+      User(
+        id: userJson['id'] as String,
+        email: userJson['email'] as String? ?? '',
+      ),
     );
-    _user = user;
-    _controller.add(user);
+    final user = _user!;
 
     final profileJson = json['profile'];
     FamilyProfile? profile;
@@ -133,11 +202,7 @@ class ApiAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) {
-    return _authPost(
-      '/api/auth/sign-in',
-      email: email,
-      password: password,
-    );
+    return _authPost('/api/auth/sign-in', email: email, password: password);
   }
 
   /// Sign up: sends OTP and returns pending verification (no session yet).
@@ -166,13 +231,13 @@ class ApiAuthRepository implements AuthRepository {
     final token = json['token'] as String?;
     final userJson = json['user'] as Map<String, dynamic>?;
     if (token != null && userJson != null) {
-      await _api.setToken(token);
-      final user = User(
-        id: userJson['id'] as String,
-        email: userJson['email'] as String? ?? '',
+      await _persistSession(
+        token,
+        User(
+          id: userJson['id'] as String,
+          email: userJson['email'] as String? ?? '',
+        ),
       );
-      _user = user;
-      _controller.add(user);
       throw ApiException(
         'Account created without email verification. Please update the server.',
       );
@@ -196,13 +261,14 @@ class ApiAuthRepository implements AuthRepository {
       throw ApiException('Verification failed');
     }
 
-    await _api.setToken(token);
-    final user = User(
-      id: userJson['id'] as String,
-      email: userJson['email'] as String? ?? '',
+    await _persistSession(
+      token,
+      User(
+        id: userJson['id'] as String,
+        email: userJson['email'] as String? ?? '',
+      ),
     );
-    _user = user;
-    _controller.add(user);
+    final user = _user!;
 
     final profileJson = json['profile'];
     FamilyProfile? profile;
@@ -242,19 +308,13 @@ class ApiAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<User> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<User> signIn({required String email, required String password}) async {
     final session = await signInWithSession(email: email, password: password);
     return session.user;
   }
 
   @override
-  Future<User> signUp({
-    required String email,
-    required String password,
-  }) async {
+  Future<User> signUp({required String email, required String password}) async {
     await signUpWithSession(email: email, password: password);
     throw ApiException('Verify your email to finish creating your account');
   }

@@ -28,9 +28,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       duration: const Duration(milliseconds: 900),
     );
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _scale = Tween<double>(begin: 0.92, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
+    _scale = Tween<double>(
+      begin: 0.92,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
     _controller.forward();
     _navigate();
   }
@@ -39,8 +40,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     await Future<void>.delayed(const Duration(milliseconds: 1200));
     if (!mounted) return;
 
-    // Wait for JWT session restore from the API.
-    for (var i = 0; i < 40; i++) {
+    // Wait until the saved session is restored from the phone.
+    for (var i = 0; i < 200; i++) {
       if (ref.read(authNotifierProvider).isInitialized) break;
       await Future<void>.delayed(const Duration(milliseconds: 50));
     }
@@ -77,11 +78,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFD8F3DC),
-              Color(0xFFF7F3EB),
-              Color(0xFFFAEDCD),
-            ],
+            colors: [Colors.white, Colors.white, Color(0xFFF1F5F9)],
           ),
         ),
         child: FadeTransition(
@@ -105,10 +102,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text(
-                  'Falimy',
-                  style: Theme.of(context).textTheme.displayLarge,
-                ),
+                Text('Falimy', style: Theme.of(context).textTheme.displayLarge),
                 const SizedBox(height: 8),
                 Text(
                   'Your family, connected',

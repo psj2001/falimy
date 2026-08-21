@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:falimy/app/theme.dart';
+import 'package:falimy/core/constants/app_routes.dart';
 import 'package:falimy/features/home/presentation/widgets/family_org_chart.dart';
+import 'package:falimy/features/home/presentation/widgets/home_greeting_header.dart';
+import 'package:falimy/features/notifications/presentation/providers/notification_notifier.dart';
 import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
 class FamilyTreeTab extends ConsumerWidget {
-  const FamilyTreeTab({super.key});
+  const FamilyTreeTab({
+    super.key,
+    this.onOpenProfile,
+  });
+
+  final VoidCallback? onOpenProfile;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(onboardingNotifierProvider);
+    final notifications = ref.watch(notificationNotifierProvider);
     final hasData = profile.fullName != null ||
         profile.fatherName != null ||
         profile.motherName != null;
@@ -19,14 +29,7 @@ class FamilyTreeTab extends ConsumerWidget {
       width: double.infinity,
       height: double.infinity,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFD8F3DC),
-            Color(0xFFF7F3EB),
-          ],
-        ),
+        gradient: FalimyTheme.screenGradient,
       ),
       child: SafeArea(
         bottom: false,
@@ -34,20 +37,25 @@ class FamilyTreeTab extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Family Tree',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Pinch to zoom · drag to pan',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
+              padding: const EdgeInsets.fromLTRB(20, 8, 16, 0),
+              child: HomeGreetingHeader(
+                profile: profile,
+                unreadCount: notifications.unreadCount,
+                onTapAvatar: onOpenProfile,
+                onTapNotifications: () =>
+                    context.push(AppRoutes.notifications),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Family Tree',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 22,
+                      color: FalimyTheme.ink,
+                    ),
               ),
             ),
             const SizedBox(height: 8),
@@ -60,14 +68,15 @@ class FamilyTreeTab extends ConsumerWidget {
                         child: Text(
                           'Complete onboarding to see your family tree.',
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: FalimyTheme.muted,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: FalimyTheme.muted,
+                                  ),
                         ),
                       ),
                     ),
             ),
-            const SizedBox(height: 100),
+            SizedBox(height: MediaQuery.paddingOf(context).bottom),
           ],
         ),
       ),

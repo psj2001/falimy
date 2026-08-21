@@ -84,8 +84,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     });
 
     try {
-      final preview =
-          await ref.read(inviteRepositoryProvider).resolveReferral(code);
+      final preview = await ref
+          .read(inviteRepositoryProvider)
+          .resolveReferral(code);
       if (!mounted) return;
       if (_normalizeCode(_referralController.text) != code) return;
       setState(() {
@@ -131,7 +132,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       }
     }
 
-    final ok = await ref.read(authNotifierProvider.notifier).signUp(
+    final ok = await ref
+        .read(authNotifierProvider.notifier)
+        .signUp(
           email: _emailController.text,
           password: _passwordController.text,
           referralCode: referralCode.isEmpty ? null : referralCode,
@@ -139,18 +142,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (!mounted) return;
     if (!ok) {
       final error = ref.read(authNotifierProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error ?? 'Sign up failed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error ?? 'Sign up failed')));
       return;
     }
 
     final auth = ref.read(authNotifierProvider);
     final email = auth.pendingVerificationEmail ?? _emailController.text.trim();
     if (auth.pendingDevOtp != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Dev OTP: ${auth.pendingDevOtp}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Dev OTP: ${auth.pendingDevOtp}')));
     }
     context.go('${AppRoutes.verifyEmail}?email=${Uri.encodeComponent(email)}');
   }
@@ -168,7 +171,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Create account', style: Theme.of(context).textTheme.headlineMedium),
+                Text(
+                  'Create account',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'Join Falimy and build your family tree',
@@ -181,7 +187,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Enter your email';
+                    if (v == null || v.trim().isEmpty)
+                      return 'Enter your email';
                     if (!v.contains('@')) return 'Enter a valid email';
                     return null;
                   },
@@ -268,8 +275,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     Text(
                       _referralError!,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                   ],
                   if (_referral != null) ...[
@@ -351,17 +358,14 @@ class _PreviewRow extends StatelessWidget {
       children: [
         SizedBox(
           width: 92,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ),
         Expanded(
           child: Text(
             value,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
       ],

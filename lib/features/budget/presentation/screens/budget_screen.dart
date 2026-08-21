@@ -80,7 +80,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFD8F3DC), Color(0xFFF7F3EB)],
+            colors: [Colors.white, Colors.white],
           ),
         ),
         child: state.isLoading && budget == null

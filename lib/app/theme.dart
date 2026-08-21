@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
 
 class FalimyTheme {
-  static const Color seed = Color(0xFF2D6A4F);
-  static const Color cream = Color(0xFFF7F3EB);
-  static const Color ink = Color(0xFF1B4332);
-  static const Color muted = Color(0xFF52796F);
-  static const Color accent = Color(0xFFD4A373);
+  static const Color seed = Color(0xFF1E3A8A);
+  static const Color cream = Color(0xFFFFFFFF);
+  static const Color ink = Color(0xFF0F172A);
+  static const Color muted = Color(0xFF64748B);
+  static const Color accent = Color(0xFF3B82F6);
+
+  /// Soft blue header/screen wash from the home greeting design.
+  static const Color mistBlue = Color(0xFFE6EEFA);
+  static const Color mistBlueSoft = Color(0xFFF3F6FB);
+
+  static const LinearGradient screenGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [mistBlue, mistBlueSoft, Color(0xFFF8FAFC)],
+    stops: [0.0, 0.45, 1.0],
+  );
 
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(
@@ -58,6 +69,29 @@ class FalimyTheme {
           side: const BorderSide(color: seed),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: seed,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: Colors.white.withValues(alpha: 0.18),
+        overlayColor: WidgetStatePropertyAll(
+          Colors.white.withValues(alpha: 0.08),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : Colors.white70,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            size: 24,
+            color: selected ? Colors.white : Colors.white70,
+          );
+        }),
       ),
       textTheme: const TextTheme(
         displayLarge: TextStyle(

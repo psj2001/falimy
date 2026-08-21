@@ -30,7 +30,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final ok = await ref.read(authNotifierProvider.notifier).signIn(
+    final ok = await ref
+        .read(authNotifierProvider.notifier)
+        .signIn(
           email: _emailController.text,
           password: _passwordController.text,
         );
@@ -49,9 +51,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         );
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error ?? 'Sign in failed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error ?? 'Sign in failed')));
       return;
     }
 
@@ -60,7 +62,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       await ref.read(onboardingNotifierProvider.notifier).ensureLoaded();
       if (!mounted) return;
       final first = claimed.first;
-      ref.read(onboardingNotifierProvider.notifier).applyInviteDefaults(
+      ref
+          .read(onboardingNotifierProvider.notifier)
+          .applyInviteDefaults(
             fullName: first.memberName,
             familyName: first.familyName,
             linkedInviterName: first.inviterName,
@@ -71,9 +75,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Linked as ${first.memberName} (${first.memberRole})',
-          ),
+          content: Text('Linked as ${first.memberName} (${first.memberRole})'),
         ),
       );
     }
@@ -99,7 +101,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Welcome back', style: Theme.of(context).textTheme.headlineMedium),
+                Text(
+                  'Welcome back',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'Sign in to continue to Falimy',
@@ -112,7 +117,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Enter your email';
+                    if (v == null || v.trim().isEmpty)
+                      return 'Enter your email';
                     if (!v.contains('@')) return 'Enter a valid email';
                     return null;
                   },

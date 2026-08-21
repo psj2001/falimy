@@ -41,16 +41,15 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   Future<void> _verify() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final ok = await ref.read(authNotifierProvider.notifier).verifyEmail(
-          email: widget.email,
-          otp: _otpController.text.trim(),
-        );
+    final ok = await ref
+        .read(authNotifierProvider.notifier)
+        .verifyEmail(email: widget.email, otp: _otpController.text.trim());
     if (!mounted) return;
     if (!ok) {
       final error = ref.read(authNotifierProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error ?? 'Verification failed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error ?? 'Verification failed')));
       return;
     }
 
@@ -59,7 +58,9 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     await ref.read(onboardingNotifierProvider.notifier).ensureLoaded();
     if (claimed.isNotEmpty) {
       final first = claimed.first;
-      ref.read(onboardingNotifierProvider.notifier).applyInviteDefaults(
+      ref
+          .read(onboardingNotifierProvider.notifier)
+          .applyInviteDefaults(
             fullName: first.memberName,
             familyName: first.familyName,
             linkedInviterName: first.inviterName,
@@ -73,8 +74,9 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     if (!mounted) return;
     if (claimed.isNotEmpty) {
       final first = claimed.first;
-      final inviter =
-          first.inviterName.isEmpty ? 'your family' : first.inviterName;
+      final inviter = first.inviterName.isEmpty
+          ? 'your family'
+          : first.inviterName;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -89,9 +91,9 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
   Future<void> _resend() async {
     setState(() => _resending = true);
-    final ok = await ref.read(authNotifierProvider.notifier).resendOtp(
-          email: widget.email,
-        );
+    final ok = await ref
+        .read(authNotifierProvider.notifier)
+        .resendOtp(email: widget.email);
     if (!mounted) return;
     setState(() => _resending = false);
 
@@ -136,8 +138,8 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                   Text(
                     'Dev OTP: ${auth.pendingDevOtp}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 36),

@@ -26,18 +26,32 @@ class ApiClient {
   ApiClient({http.Client? client}) : _client = client ?? http.Client();
 
   static const _tokenKey = 'falimy_auth_token';
+  static const _userKey = 'falimy_auth_user';
 
   final http.Client _client;
   String? _token;
+  Map<String, dynamic>? _cachedUser;
   final _tokenController = StreamController<String?>.broadcast();
 
   String? get token => _token;
+
+  Map<String, dynamic>? get cachedUser => _cachedUser;
 
   Stream<String?> get tokenChanges => _tokenController.stream;
 
   Future<void> restoreSession() async {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString(_tokenKey);
+    final raw = prefs.getString(_userKey);
+    _cachedUser = null;
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) {
+          _cachedUser = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {}
+    }
     _tokenController.add(_token);
   }
 
@@ -46,10 +60,18 @@ class ApiClient {
     final prefs = await SharedPreferences.getInstance();
     if (token == null || token.isEmpty) {
       await prefs.remove(_tokenKey);
+      await prefs.remove(_userKey);
+      _cachedUser = null;
     } else {
       await prefs.setString(_tokenKey, token);
     }
     _tokenController.add(_token);
+  }
+
+  Future<void> cacheUser(Map<String, dynamic> user) async {
+    _cachedUser = user;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userKey, jsonEncode(user));
   }
 
   Future<void> clearToken() => setToken(null);
@@ -63,12 +85,18 @@ class ApiClient {
     return {
       if (jsonBody) 'Content-Type': 'application/json',
       'Accept': 'application/json',
-      if (_token != null && _token!.isNotEmpty) 'Authorization': 'Bearer $_token',
+      if (_token != null && _token!.isNotEmpty)
+        'Authorization': 'Bearer $_token',
     };
   }
 
-  Future<Map<String, dynamic>> getJson(String path) async {
-    final response = await _client.get(_uri(path), headers: _headers());
+  Future<Map<String, dynamic>> getJson(
+    String path, {
+    Duration timeout = const Duration(seconds: 25),
+  }) async {
+    final response = await _client
+        .get(_uri(path), headers: _headers())
+        .timeout(timeout);
     return _decode(response);
   }
 
@@ -131,7 +159,8 @@ class ApiClient {
       return json;
     }
 
-    final message = (json['message'] as String?) ??
+    final message =
+        (json['message'] as String?) ??
         'Request failed (${response.statusCode})';
     throw ApiException(message, statusCode: response.statusCode, body: json);
   }

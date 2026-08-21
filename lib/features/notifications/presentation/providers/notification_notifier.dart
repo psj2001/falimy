@@ -8,6 +8,8 @@ import 'package:falimy/features/auth/presentation/providers/repository_providers
 import 'package:falimy/features/notifications/data/api_notification_repository.dart';
 import 'package:falimy/features/notifications/domain/app_notification.dart';
 import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
+import 'package:falimy/features/reminders/data/payment_reminder_local_store.dart';
+import 'package:falimy/features/reminders/domain/payment_reminder.dart';
 
 class NotificationState extends Equatable {
   const NotificationState({
@@ -41,8 +43,9 @@ class NotificationState extends Equatable {
   List<Object?> get props => [notifications, unreadCount, isLoading, error];
 }
 
-final notificationRepositoryProvider =
-    Provider<ApiNotificationRepository>((ref) {
+final notificationRepositoryProvider = Provider<ApiNotificationRepository>((
+  ref,
+) {
   return ApiNotificationRepository(apiClient: ref.watch(apiClientProvider));
 });
 
@@ -80,16 +83,19 @@ class NotificationNotifier extends Notifier<NotificationState> {
     }
     try {
       final result = await ref.read(notificationRepositoryProvider).list();
+      final local = await _localReminderNotifications();
       final hadLinkedIds = state.notifications
           .where((item) => item.type == 'family_linked')
           .map((item) => item.id)
           .toSet();
       final hasNewLink = result.notifications.any(
-        (item) => item.type == 'family_linked' && !hadLinkedIds.contains(item.id),
+        (item) =>
+            item.type == 'family_linked' && !hadLinkedIds.contains(item.id),
       );
       state = state.copyWith(
-        notifications: result.notifications,
-        unreadCount: result.unreadCount,
+        notifications: [...local, ...result.notifications],
+        unreadCount:
+            result.unreadCount + local.where((item) => !item.isRead).length,
         isLoading: false,
         clearError: true,
       );
@@ -109,7 +115,11 @@ class NotificationNotifier extends Notifier<NotificationState> {
   Future<void> markRead(String id) async {
     final index = state.notifications.indexWhere((item) => item.id == id);
     if (index < 0 || state.notifications[index].isRead) return;
-    await ref.read(notificationRepositoryProvider).markRead(id);
+    if (id.startsWith('payrem_')) {
+      await PaymentReminderLocalStore().markInboxRead(id);
+    } else {
+      await ref.read(notificationRepositoryProvider).markRead(id);
+    }
     final updated = state.notifications.toList();
     updated[index] = updated[index].copyWith(isRead: true);
     state = state.copyWith(
@@ -120,16 +130,59 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
   Future<void> markAllRead() async {
     if (state.unreadCount == 0) return;
-    await ref.read(notificationRepositoryProvider).markAllRead();
+    final localIds = state.notifications
+        .where((item) => item.type == 'payment_reminder' && !item.isRead)
+        .map((item) => item.id);
+    if (localIds.isNotEmpty) {
+      await PaymentReminderLocalStore().markInboxReadAll(localIds);
+    }
+    final hasRemoteUnread = state.notifications.any(
+      (item) => item.type != 'payment_reminder' && !item.isRead,
+    );
+    if (hasRemoteUnread) {
+      await ref.read(notificationRepositoryProvider).markAllRead();
+    }
     state = state.copyWith(
-      notifications:
-          state.notifications.map((item) => item.copyWith(isRead: true)).toList(),
+      notifications: state.notifications
+          .map((item) => item.copyWith(isRead: true))
+          .toList(),
       unreadCount: 0,
     );
   }
+
+  Future<List<AppNotification>> _localReminderNotifications() async {
+    try {
+      final store = PaymentReminderLocalStore();
+      final reminders = await store.load();
+      final readIds = await store.loadReadInboxIds();
+      final items = <AppNotification>[];
+      for (final reminder in reminders) {
+        if (!reminder.shouldAppearInInbox()) continue;
+        items.add(_fromReminder(reminder, readIds.contains(reminder.inboxId)));
+      }
+      items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return items;
+    } catch (_) {
+      return const [];
+    }
+  }
+}
+
+AppNotification _fromReminder(PaymentReminder reminder, bool isRead) {
+  final due = reminder.displayDueDate();
+  final notifyDay = due.subtract(Duration(days: reminder.remindDaysBefore));
+  return AppNotification(
+    id: reminder.inboxId,
+    type: 'payment_reminder',
+    title: 'Pay ${reminder.title}',
+    message: reminder.inboxMessage(),
+    isRead: isRead,
+    createdAt: DateTime(notifyDay.year, notifyDay.month, notifyDay.day, 9),
+    data: {'reminderId': reminder.id},
+  );
 }
 
 final notificationNotifierProvider =
     NotifierProvider<NotificationNotifier, NotificationState>(
-  NotificationNotifier.new,
-);
+      NotificationNotifier.new,
+    );

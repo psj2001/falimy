@@ -63,14 +63,14 @@ class AuthState extends Equatable {
 
   @override
   List<Object?> get props => [
-        user,
-        isLoading,
-        error,
-        isInitialized,
-        claimedInvites,
-        pendingVerificationEmail,
-        pendingDevOtp,
-      ];
+    user,
+    isLoading,
+    error,
+    isInitialized,
+    claimedInvites,
+    pendingVerificationEmail,
+    pendingDevOtp,
+  ];
 }
 
 List<FamilyInvite> _mapClaimed(List<Map<String, dynamic>> raw) {
@@ -111,19 +111,15 @@ class AuthNotifier extends Notifier<AuthState> {
     // Kick off session restore.
     Future.microtask(() => repo.restore());
 
-    return AuthState(
-      user: repo.currentUser,
-      isInitialized: false,
-    );
+    return AuthState(user: repo.currentUser, isInitialized: false);
   }
 
   Future<bool> signIn({required String email, required String password}) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final session = await ref.read(apiAuthRepositoryProvider).signInWithSession(
-            email: email,
-            password: password,
-          );
+      final session = await ref
+          .read(apiAuthRepositoryProvider)
+          .signInWithSession(email: email, password: password);
       state = state.copyWith(
         user: session.user,
         isLoading: false,
@@ -144,10 +140,7 @@ class AuthNotifier extends Notifier<AuthState> {
         );
         return false;
       }
-      state = state.copyWith(
-        isLoading: false,
-        error: e.message,
-      );
+      state = state.copyWith(isLoading: false, error: e.message);
       return false;
     } catch (e) {
       state = state.copyWith(
@@ -167,7 +160,9 @@ class AuthNotifier extends Notifier<AuthState> {
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final pending = await ref.read(apiAuthRepositoryProvider).signUpWithSession(
+      final pending = await ref
+          .read(apiAuthRepositoryProvider)
+          .signUpWithSession(
             email: email,
             password: password,
             referralCode: referralCode,
@@ -190,17 +185,12 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  Future<bool> verifyEmail({
-    required String email,
-    required String otp,
-  }) async {
+  Future<bool> verifyEmail({required String email, required String otp}) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final session =
-          await ref.read(apiAuthRepositoryProvider).verifyEmailWithSession(
-                email: email,
-                otp: otp,
-              );
+      final session = await ref
+          .read(apiAuthRepositoryProvider)
+          .verifyEmailWithSession(email: email, otp: otp);
       state = state.copyWith(
         user: session.user,
         isLoading: false,
@@ -220,8 +210,9 @@ class AuthNotifier extends Notifier<AuthState> {
 
   Future<bool> resendOtp({required String email}) async {
     try {
-      final pending =
-          await ref.read(apiAuthRepositoryProvider).resendOtp(email: email);
+      final pending = await ref
+          .read(apiAuthRepositoryProvider)
+          .resendOtp(email: email);
       state = state.copyWith(
         pendingVerificationEmail: pending.email,
         pendingDevOtp: pending.devOtp,
@@ -249,5 +240,6 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 }
 
-final authNotifierProvider =
-    NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+final authNotifierProvider = NotifierProvider<AuthNotifier, AuthState>(
+  AuthNotifier.new,
+);

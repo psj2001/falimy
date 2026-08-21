@@ -214,8 +214,8 @@ class _BooksScreenState extends ConsumerState<BooksScreen> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFD8F3DC),
-            Color(0xFFF7F3EB),
+            Colors.white,
+            Colors.white,
           ],
         ),
       ),
@@ -271,7 +271,7 @@ class _BooksScreenState extends ConsumerState<BooksScreen> {
                   child: state.isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : ListView(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
                           children: [
                             Row(
                               children: [
@@ -369,7 +369,7 @@ class _BooksScreenState extends ConsumerState<BooksScreen> {
             ),
             Positioned(
               right: 16,
-              bottom: 100,
+              bottom: 16,
               child: FloatingActionButton.extended(
                 onPressed: () => _openAddBook(),
                 backgroundColor: FalimyTheme.seed,

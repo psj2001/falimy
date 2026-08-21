@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:falimy/app/theme.dart';
 import 'package:falimy/features/notifications/domain/app_notification.dart';
 import 'package:falimy/features/notifications/presentation/providers/notification_notifier.dart';
+import 'package:falimy/features/reminders/presentation/providers/payment_reminder_notifier.dart';
+import 'package:falimy/features/reminders/presentation/screens/payment_reminders_screen.dart';
+import 'package:falimy/features/reminders/presentation/widgets/payment_status_prompt.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -33,14 +36,14 @@ class NotificationsScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFD8F3DC), Color(0xFFF7F3EB)],
+            colors: [Colors.white, Colors.white],
           ),
         ),
         child: SafeArea(
           top: false,
           child: RefreshIndicator(
             onRefresh: () => notifier.load(),
-            child: _body(context, state, notifier),
+            child: _body(context, ref, state, notifier),
           ),
         ),
       ),
@@ -49,6 +52,7 @@ class NotificationsScreen extends ConsumerWidget {
 
   Widget _body(
     BuildContext context,
+    WidgetRef ref,
     NotificationState state,
     NotificationNotifier notifier,
   ) {
@@ -100,7 +104,22 @@ class NotificationsScreen extends ConsumerWidget {
         final item = state.notifications[index];
         return _NotificationCard(
           notification: item,
-          onTap: () => notifier.markRead(item.id),
+          onTap: () async {
+            await notifier.markRead(item.id);
+            if (item.type != 'payment_reminder' || !context.mounted) return;
+            final reminderId = item.data['reminderId'] as String?;
+            final reminder = reminderId == null
+                ? null
+                : ref.read(paymentReminderNotifierProvider).byId(reminderId);
+            if (reminder != null && reminder.needsPaymentPrompt) {
+              await promptPaymentReminderStatus(context, ref, reminder);
+              return;
+            }
+            if (!context.mounted) return;
+            await Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PaymentRemindersScreen()),
+            );
+          },
         );
       },
     );
@@ -108,19 +127,18 @@ class NotificationsScreen extends ConsumerWidget {
 }
 
 class _NotificationCard extends StatelessWidget {
-  const _NotificationCard({
-    required this.notification,
-    required this.onTap,
-  });
+  const _NotificationCard({required this.notification, required this.onTap});
 
   final AppNotification notification;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final icon = notification.type == 'family_invite'
-        ? Icons.mail_outline_rounded
-        : Icons.family_restroom_rounded;
+    final icon = switch (notification.type) {
+      'family_invite' => Icons.mail_outline_rounded,
+      'payment_reminder' => Icons.notifications_active_outlined,
+      _ => Icons.family_restroom_rounded,
+    };
 
     return Material(
       color: notification.isRead
@@ -150,12 +168,12 @@ class _NotificationCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             notification.title,
-                            style:
-                                Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: notification.isRead
-                                          ? FontWeight.w600
-                                          : FontWeight.w800,
-                                    ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: notification.isRead
+                                      ? FontWeight.w600
+                                      : FontWeight.w800,
+                                ),
                           ),
                         ),
                         if (!notification.isRead)
@@ -169,10 +187,12 @@ class _NotificationCard extends StatelessWidget {
                     Text(notification.message),
                     const SizedBox(height: 8),
                     Text(
-                      DateFormat.yMMMd().add_jm().format(notification.createdAt),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: FalimyTheme.muted,
-                          ),
+                      DateFormat.yMMMd().add_jm().format(
+                        notification.createdAt,
+                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: FalimyTheme.muted),
                     ),
                   ],
                 ),

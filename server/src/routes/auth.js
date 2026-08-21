@@ -587,6 +587,7 @@ router.get('/me', authRequired, async (req, res) => {
     return res.json({
       user: user.toPublic(),
       profile: user.toProfile(),
+      token: signToken(user),
     });
   } catch (err) {
     console.error('me', err);

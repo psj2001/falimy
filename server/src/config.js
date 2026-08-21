@@ -15,7 +15,7 @@ module.exports = {
     String(env('USE_MEMORY_MONGO')).toLowerCase() === 'true' ||
     env('USE_MEMORY_MONGO') === '1',
   jwtSecret: env('JWT_SECRET', 'falimy-dev-secret'),
-  jwtExpiresIn: env('JWT_EXPIRES_IN', '30d'),
+  jwtExpiresIn: env('JWT_EXPIRES_IN', '365d'),
 
   // Free SMTP (Gmail App Password, Brevo, Mailjet, etc.)
   smtpHost: env('SMTP_HOST', 'smtp.gmail.com'),

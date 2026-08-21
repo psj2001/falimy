@@ -229,8 +229,8 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFD8F3DC),
-              Color(0xFFF7F3EB),
+              Colors.white,
+              Colors.white,
             ],
           ),
         ),

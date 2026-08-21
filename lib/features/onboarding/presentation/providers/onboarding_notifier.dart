@@ -245,6 +245,11 @@ class OnboardingNotifier extends Notifier<FamilyProfile> {
     await _persist();
   }
 
+  Future<void> setSalary(num salary) async {
+    _set(state.copyWith(salary: salary));
+    await _persist();
+  }
+
   Future<void> updateProfile(FamilyProfile profile) async {
     _set(profile);
     await _persist();

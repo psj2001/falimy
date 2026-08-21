@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import 'package:falimy/features/financial/domain/entities/cash_book.dart';
 import 'package:falimy/features/financial/domain/entities/cash_entry.dart';
@@ -207,6 +208,109 @@ class FinancialNotifier extends Notifier<FinancialState> {
       state = state.copyWith(isSaving: false, error: e.toString());
       return false;
     }
+  }
+
+  CashBook? bookForCurrentMonth() {
+    final now = DateTime.now();
+    for (final book in state.books) {
+      if (book.createdAt.year == now.year && book.createdAt.month == now.month) {
+        return book;
+      }
+    }
+    return null;
+  }
+
+  /// Creates the current-month cash book if needed, then logs salary as cash in.
+  Future<CashBook?> addSalaryAsMonthlyIncome(double amount) async {
+    if (amount <= 0) {
+      state = state.copyWith(error: 'Amount must be greater than zero');
+      return null;
+    }
+
+    var book = bookForCurrentMonth();
+    book ??= await createBook(
+      name: '${DateFormat.MMMM().format(DateTime.now())} Expenses',
+      access: BookAccess.justMe,
+    );
+    if (book == null) return null;
+
+    String? categoryId;
+    for (final category in state.categoriesFor(book.id)) {
+      if (category.name.toLowerCase() == 'salary') {
+        categoryId = category.id;
+        break;
+      }
+    }
+
+    final alreadyLogged = state.entriesFor(book.id).any((entry) {
+      if (!entry.isCashIn) return false;
+      if (entry.remark?.trim().toLowerCase() == 'salary') return true;
+      return categoryId != null && entry.categoryId == categoryId;
+    });
+    if (alreadyLogged) return book;
+
+    String? paymentMode;
+    final modes = state.paymentModesFor(book.id);
+    if (modes.isNotEmpty) paymentMode = modes.first.name;
+
+    final saved = await addEntry(
+      CashEntry(
+        id: '',
+        bookId: book.id,
+        type: EntryType.cashIn,
+        amount: amount,
+        dateTime: DateTime.now(),
+        remark: 'Salary',
+        categoryId: categoryId,
+        paymentMode: paymentMode,
+      ),
+    );
+    if (saved == null) return null;
+    return state.bookById(book.id) ?? book;
+  }
+
+  Future<CashEntry?> addUnexpectedExpense({
+    required String bookId,
+    required String categoryName,
+    required double amount,
+    String? note,
+  }) async {
+    if (amount <= 0) {
+      state = state.copyWith(error: 'Amount must be greater than zero');
+      return null;
+    }
+
+    String? categoryId;
+    for (final category in state.categoriesFor(bookId)) {
+      if (category.name.toLowerCase() == categoryName.toLowerCase()) {
+        categoryId = category.id;
+        break;
+      }
+    }
+    if (categoryId == null) {
+      final created = await addCategory(bookId: bookId, name: categoryName);
+      categoryId = created?.id;
+    }
+
+    String? paymentMode;
+    final modes = state.paymentModesFor(bookId);
+    if (modes.isNotEmpty) paymentMode = modes.first.name;
+
+    final trimmedNote = note?.trim();
+    return addEntry(
+      CashEntry(
+        id: '',
+        bookId: bookId,
+        type: EntryType.cashOut,
+        amount: amount,
+        dateTime: DateTime.now(),
+        remark: (trimmedNote == null || trimmedNote.isEmpty)
+            ? categoryName
+            : trimmedNote,
+        categoryId: categoryId,
+        paymentMode: paymentMode,
+      ),
+    );
   }
 
   Future<CashEntry?> addEntry(CashEntry entry) async {

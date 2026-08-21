@@ -61,7 +61,7 @@ Env vars:
 - `USE_MEMORY_MONGO` = `false`
 - `MONGODB_URI` = *(your Atlas URI)*
 - `JWT_SECRET` = *(long random string)*
-- `JWT_EXPIRES_IN` = `30d`
+- `JWT_EXPIRES_IN` = `365d`
 
 ## 3. Point Flutter at Render
 
@@ -73,4 +73,5 @@ flutter build apk --dart-define=API_BASE_URL=https://falimy-api.onrender.com
 ## Notes
 
 - Free Render services **sleep** after ~15 min idle; first request can take 30–60s.
+- The app keeps you signed in if the API is asleep or the network fails. It only signs you out when the session token is actually invalid.
 - CashBook data stays on each phone; only auth/profile/family/invites use this API.

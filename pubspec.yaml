@@ -38,13 +38,15 @@ dependencies:
   go_router: ^17.3.0
   intl: ^0.20.3
   equatable: ^2.1.0
-  circle_nav_bar: ^2.2.0
   image_picker: ^1.2.3
   path_provider: ^2.1.6
   path: ^1.9.1
   http: ^1.6.0
   url_launcher: ^6.3.2
   shared_preferences: ^2.5.3
+  flutter_local_notifications: ^19.5.0
+  timezone: ^0.10.1
+  flutter_timezone: ^5.0.1
 
 dev_dependencies:
   flutter_test:
@@ -69,6 +71,13 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/
+    - assets/bike.png
+    - assets/car.png
+    - assets/sooter.png
+    - "assets/other veichle.png"
 
   # To add assets to your application, add an assets section, like this:
   # assets:
