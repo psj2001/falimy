@@ -6,6 +6,24 @@ const router = express.Router();
 
 router.use(authRequired);
 
+// Full package for every book — used to restore data on a new device.
+router.get('/snapshot', async (req, res, next) => {
+  try {
+    const docs = await CloudBook.find({ ownerUserId: req.userId }).lean();
+    res.json({
+      books: docs.map((doc) => ({
+        book: doc.book,
+        entries: doc.entries ?? [],
+        categories: doc.categories ?? [],
+        paymentModes: doc.paymentModes ?? [],
+        syncedAt: doc.syncedAt,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // List cloud books for current user (metadata)
 router.get('/books', async (req, res, next) => {
   try {

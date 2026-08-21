@@ -34,4 +34,9 @@ class LocalPaymentReminderRepository implements PaymentReminderRepository {
     _cache = _cache.where((item) => item.id != id).toList();
     await _store.save(_cache);
   }
+
+  Future<void> replaceAll(List<PaymentReminder> reminders) async {
+    _cache = reminders;
+    await _store.save(_cache);
+  }
 }

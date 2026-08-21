@@ -39,6 +39,10 @@ class FamilyOrgChart extends StatelessWidget {
     }
   }
 
+  String? _photo(String memberKey, {String? name}) {
+    return profile.photoForMember(memberKey, name: name);
+  }
+
   Widget _siblingCard(BuildContext context, Sibling sibling) {
     final index = profile.siblings.indexOf(sibling);
     final link = profile.memberLinks['sibling_$index'];
@@ -46,10 +50,11 @@ class FamilyOrgChart extends StatelessWidget {
     final role = sibling.gender == SiblingGender.male
         ? (isElder ? 'Elder brother' : 'Younger brother')
         : (isElder ? 'Elder sister' : 'Younger sister');
+    final photoPath = _photo('sibling_$index', name: sibling.name);
     return _TreeMember(
       name: sibling.name,
       subtitle: role,
-      photoPath: link?.photoPath,
+      photoPath: photoPath,
       onTap: () => _openMember(
         context,
         FamilyMemberDetail(
@@ -58,7 +63,7 @@ class FamilyOrgChart extends StatelessWidget {
           role: role,
           kind: FamilyMemberKind.sibling,
           genderLabel: sibling.gender == SiblingGender.male ? 'Male' : 'Female',
-          photoPath: link?.photoPath,
+          photoPath: photoPath,
           linkedUserId: link?.userId,
           isLinked: link != null,
         ),
@@ -117,7 +122,7 @@ class FamilyOrgChart extends StatelessWidget {
           child: _TreeMember(
             name: profile.fatherName ?? 'Father',
             subtitle: 'Father',
-            photoPath: fatherLink?.photoPath,
+            photoPath: _photo('father', name: profile.fatherName),
             muted: profile.fatherName == null,
             onTap: profile.fatherName == null
                 ? null
@@ -129,7 +134,7 @@ class FamilyOrgChart extends StatelessWidget {
                         role: 'Father',
                         kind: FamilyMemberKind.father,
                         familyName: profile.familyName,
-                        photoPath: fatherLink?.photoPath,
+                        photoPath: _photo('father', name: profile.fatherName),
                         linkedUserId: fatherLink?.userId,
                         isLinked: fatherLink != null,
                       ),
@@ -142,7 +147,7 @@ class FamilyOrgChart extends StatelessWidget {
           child: _TreeMember(
             name: profile.motherName ?? 'Mother',
             subtitle: 'Mother',
-            photoPath: motherLink?.photoPath,
+            photoPath: _photo('mother', name: profile.motherName),
             muted: profile.motherName == null,
             onTap: profile.motherName == null
                 ? null
@@ -154,7 +159,7 @@ class FamilyOrgChart extends StatelessWidget {
                         role: 'Mother',
                         kind: FamilyMemberKind.mother,
                         familyName: profile.familyName,
-                        photoPath: motherLink?.photoPath,
+                        photoPath: _photo('mother', name: profile.motherName),
                         linkedUserId: motherLink?.userId,
                         isLinked: motherLink != null,
                       ),
@@ -175,7 +180,7 @@ class FamilyOrgChart extends StatelessWidget {
           child: _TreeMember(
             name: profile.spouse!.name,
             subtitle: spouseRole,
-            photoPath: spouseLink?.photoPath,
+            photoPath: _photo('spouse', name: profile.spouse?.name),
             onTap: () => _openMember(
               context,
               FamilyMemberDetail(
@@ -186,7 +191,7 @@ class FamilyOrgChart extends StatelessWidget {
                 profession: profile.spouse!.profession,
                 age: profile.spouse!.age,
                 familyName: profile.spouse!.familyName,
-                photoPath: spouseLink?.photoPath,
+                photoPath: _photo('spouse', name: profile.spouse?.name),
                 linkedUserId: spouseLink?.userId,
                 isLinked: spouseLink != null,
               ),
@@ -211,7 +216,10 @@ class FamilyOrgChart extends StatelessWidget {
           child: _TreeMember(
             name: profile.children[i].name,
             subtitle: 'Child',
-            photoPath: profile.memberLinks['child_$i']?.photoPath,
+            photoPath: _photo(
+              'child_$i',
+              name: profile.children[i].name,
+            ),
             onTap: () => _openMember(
               context,
               FamilyMemberDetail(
@@ -220,7 +228,10 @@ class FamilyOrgChart extends StatelessWidget {
                 role: 'Child',
                 kind: FamilyMemberKind.child,
                 age: profile.children[i].age,
-                photoPath: profile.memberLinks['child_$i']?.photoPath,
+                photoPath: _photo(
+                  'child_$i',
+                  name: profile.children[i].name,
+                ),
                 linkedUserId: profile.memberLinks['child_$i']?.userId,
                 isLinked: profile.memberLinks['child_$i'] != null,
               ),
@@ -600,7 +611,11 @@ class _TreeMember extends StatelessWidget {
           ),
           child: Row(
             children: [
-              ProfileAvatar(photoPath: photoPath, radius: 18),
+              ProfileAvatar(
+                key: ValueKey(photoPath ?? name),
+                photoPath: photoPath,
+                radius: 18,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(

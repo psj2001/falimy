@@ -271,6 +271,13 @@ class LocalFinancialRepository implements FinancialRepository {
     return updated;
   }
 
+  Future<void> replaceAll(FinancialSnapshot snapshot) async {
+    _cache = snapshot;
+    await _store.save(_cache);
+  }
+
+  FinancialSnapshot get current => _cache;
+
   String _newId(String prefix) =>
       '${prefix}_${DateTime.now().microsecondsSinceEpoch}';
 }

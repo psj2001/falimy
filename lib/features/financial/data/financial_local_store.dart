@@ -9,11 +9,27 @@ import 'package:falimy/features/financial/domain/entities/payment_mode.dart';
 import 'package:falimy/features/financial/domain/repositories/financial_repository.dart';
 
 class FinancialLocalStore {
-  static const _key = 'falimy_financial_v1';
+  FinancialLocalStore({this.userId});
+
+  static const _legacyKey = 'falimy_financial_v1';
+
+  final String? userId;
+
+  String get _key {
+    final id = userId?.trim() ?? '';
+    if (id.isEmpty) return _legacyKey;
+    return '${_legacyKey}_$id';
+  }
 
   Future<FinancialSnapshot> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
+    var raw = prefs.getString(_key);
+    if ((raw == null || raw.isEmpty) && _key != _legacyKey) {
+      raw = prefs.getString(_legacyKey);
+      if (raw != null && raw.isNotEmpty) {
+        await prefs.setString(_key, raw);
+      }
+    }
     if (raw == null || raw.isEmpty) {
       return const FinancialSnapshot(
         books: [],

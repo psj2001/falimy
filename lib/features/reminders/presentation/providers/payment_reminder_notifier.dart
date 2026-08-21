@@ -1,9 +1,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:falimy/features/auth/presentation/providers/auth_notifier.dart';
+import 'package:falimy/features/auth/presentation/providers/repository_providers.dart';
 import 'package:falimy/features/reminders/data/local_payment_reminder_repository.dart';
+import 'package:falimy/features/reminders/data/payment_reminder_local_store.dart';
 import 'package:falimy/features/reminders/data/payment_reminder_notifications.dart';
 import 'package:falimy/features/notifications/presentation/providers/notification_notifier.dart';
+import 'package:falimy/features/reminders/data/syncing_payment_reminder_repository.dart';
 import 'package:falimy/features/reminders/domain/payment_reminder.dart';
 import 'package:falimy/features/reminders/domain/repositories/payment_reminder_repository.dart';
 
@@ -66,12 +70,21 @@ class PaymentReminderState extends Equatable {
 final paymentReminderRepositoryProvider = Provider<PaymentReminderRepository>((
   ref,
 ) {
-  return LocalPaymentReminderRepository();
+  final userId = ref.watch(authNotifierProvider.select((s) => s.user?.id));
+  return SyncingPaymentReminderRepository(
+    local: LocalPaymentReminderRepository(
+      store: PaymentReminderLocalStore(userId: userId),
+    ),
+    apiClient: ref.watch(apiClientProvider),
+  );
 });
 
 class PaymentReminderNotifier extends Notifier<PaymentReminderState> {
   @override
   PaymentReminderState build() {
+    ref.listen(authNotifierProvider.select((s) => s.user?.id), (previous, next) {
+      if (previous != next) Future.microtask(load);
+    });
     Future.microtask(load);
     return const PaymentReminderState();
   }

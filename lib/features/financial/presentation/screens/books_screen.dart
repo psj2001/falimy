@@ -204,6 +204,9 @@ class _BooksScreenState extends ConsumerState<BooksScreen> {
     }).toList()
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
+    // HomeScreen inflates MediaQuery padding so content clears the pill nav.
+    final bottomClearance = MediaQuery.paddingOf(context).bottom;
+
     return Material(
       type: MaterialType.transparency,
       child: Container(
@@ -271,7 +274,12 @@ class _BooksScreenState extends ConsumerState<BooksScreen> {
                   child: state.isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : ListView(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            16,
+                            16,
+                            bottomClearance + 88,
+                          ),
                           children: [
                             Row(
                               children: [
@@ -369,7 +377,7 @@ class _BooksScreenState extends ConsumerState<BooksScreen> {
             ),
             Positioned(
               right: 16,
-              bottom: 16,
+              bottom: bottomClearance + 16,
               child: FloatingActionButton.extended(
                 onPressed: () => _openAddBook(),
                 backgroundColor: FalimyTheme.seed,

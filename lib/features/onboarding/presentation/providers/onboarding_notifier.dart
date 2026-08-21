@@ -57,7 +57,8 @@ class OnboardingNotifier extends Notifier<FamilyProfile> {
     } catch (_) {
       final currentId = ref.read(authNotifierProvider).user?.id;
       if (currentId != userId) return;
-      _loadedForUserId = userId;
+      // Leave unloaded so the next tree/home refresh retries.
+      _loadFuture = null;
     }
   }
 

@@ -174,8 +174,10 @@ class ApiAuthRepository implements AuthRepository {
 
     final profileJson = json['profile'];
     FamilyProfile? profile;
-    if (profileJson is Map<String, dynamic>) {
-      profile = FamilyProfileMapper.fromJson(profileJson);
+    if (profileJson is Map) {
+      profile = FamilyProfileMapper.fromJson(
+        Map<String, dynamic>.from(profileJson),
+      );
     }
 
     final claimed = <Map<String, dynamic>>[];
@@ -272,8 +274,10 @@ class ApiAuthRepository implements AuthRepository {
 
     final profileJson = json['profile'];
     FamilyProfile? profile;
-    if (profileJson is Map<String, dynamic>) {
-      profile = FamilyProfileMapper.fromJson(profileJson);
+    if (profileJson is Map) {
+      profile = FamilyProfileMapper.fromJson(
+        Map<String, dynamic>.from(profileJson),
+      );
     }
 
     final claimed = <Map<String, dynamic>>[];
@@ -431,24 +435,24 @@ class FamilyProfileMapper {
         final value = entry.value;
         if (value is! Map) continue;
         final map = Map<String, dynamic>.from(value);
-        final userId = (map['userId'] as String?)?.trim() ?? '';
+        final userId = _asString(map['userId']) ?? '';
         if (userId.isEmpty) continue;
         memberLinks[entry.key.toString()] = LinkedFamilyMember(
           userId: userId,
-          name: (map['name'] as String?) ?? '',
-          kind: (map['kind'] as String?) ?? '',
-          role: (map['role'] as String?) ?? '',
-          email: map['email'] as String?,
-          photoPath: map['photoPath'] as String?,
+          name: _asString(map['name']) ?? '',
+          kind: _asString(map['kind']) ?? '',
+          role: _asString(map['role']) ?? '',
+          email: _asString(map['email']),
+          photoPath: _asString(map['photoPath']),
         );
       }
     }
 
     return FamilyProfile(
-      fullName: data['fullName'] as String?,
+      fullName: _asString(data['fullName']),
       dateOfBirth: dob,
-      familyName: data['familyName'] as String?,
-      photoPath: data['photoPath'] as String?,
+      familyName: _asString(data['familyName']),
+      photoPath: _asString(data['photoPath']),
       fatherName: data['fatherName'] as String?,
       motherName: data['motherName'] as String?,
       siblings: siblings,
@@ -467,6 +471,12 @@ class FamilyProfileMapper {
       spouseSuggestionRole: spouseSuggestionRole,
       memberLinks: memberLinks,
     );
+  }
+
+  static String? _asString(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
   }
 
   static OccupationStatus? _parseOccupationStatus(dynamic raw) {

@@ -8,11 +8,12 @@ import 'package:falimy/features/home/presentation/screens/family_tree_tab.dart';
 import 'package:falimy/features/home/presentation/screens/financial_tab.dart';
 import 'package:falimy/features/home/presentation/screens/home_tab.dart';
 import 'package:falimy/features/home/presentation/screens/profile_tab.dart';
+import 'package:falimy/features/home/presentation/screens/search_tab.dart';
 import 'package:falimy/features/home/presentation/widgets/pill_bottom_nav.dart';
 import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
 /// Home shell with floating pill bottom nav:
-/// Home | Tree | Money | Profile
+/// Home | Search | Tree | Money | Profile
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -22,14 +23,20 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   static const _homeIndex = 0;
-  static const _familyTreeIndex = 1;
-  static const _profileIndex = 3;
+  static const _searchIndex = 1;
+  static const _familyTreeIndex = 2;
+  static const _profileIndex = 4;
 
   static const _navItems = [
     PillNavItem(
       icon: Icons.home_outlined,
       selectedIcon: Icons.home_rounded,
       label: 'Home',
+    ),
+    PillNavItem(
+      icon: Icons.search_outlined,
+      selectedIcon: Icons.search_rounded,
+      label: 'Search',
     ),
     PillNavItem(
       icon: Icons.park_outlined,
@@ -85,6 +92,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         context.push(AppRoutes.notifications),
                     onOpenBudget: () => context.push(AppRoutes.budget),
                   ),
+                  SearchTab(
+                    isActive: _activeIndex == _searchIndex,
+                    onOpenProfile: () => _openTab(_profileIndex),
+                  ),
                   FamilyTreeTab(
                     onOpenProfile: () => _openTab(_profileIndex),
                   ),
@@ -98,11 +109,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             left: 0,
             right: 0,
             bottom: bottomInset > 0 ? bottomInset : 16,
-            child: Center(
-              child: PillBottomNav(
-                selectedIndex: _activeIndex,
-                onDestinationSelected: _openTab,
-                items: _navItems,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Center(
+                child: PillBottomNav(
+                  selectedIndex: _activeIndex,
+                  onDestinationSelected: _openTab,
+                  items: _navItems,
+                ),
               ),
             ),
           ),

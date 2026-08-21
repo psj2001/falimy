@@ -11,6 +11,8 @@ const financialRoutes = require('./routes/financial');
 const notificationRoutes = require('./routes/notifications');
 const budgetRoutes = require('./routes/budget');
 const familyRoutes = require('./routes/families');
+const assetRoutes = require('./routes/assets');
+const reminderRoutes = require('./routes/reminders');
 
 async function main() {
   await connectDb();
@@ -31,6 +33,8 @@ async function main() {
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/budget', budgetRoutes);
   app.use('/api/families', familyRoutes);
+  app.use('/api/assets', assetRoutes);
+  app.use('/api/reminders', reminderRoutes);
 
   app.use((err, _req, res, _next) => {
     console.error(err);

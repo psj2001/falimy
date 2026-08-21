@@ -16,7 +16,7 @@ class FamilySearchResults extends StatelessWidget {
       return const _SearchMessage(
         icon: Icons.search_rounded,
         title: 'Search a family',
-        subtitle: 'Type a family name to see its members.',
+        subtitle: 'Type a family name to see how many people are in it.',
       );
     }
 
@@ -60,19 +60,28 @@ class FamilySearchResults extends StatelessWidget {
   }
 }
 
-class _FamilyResultCard extends StatelessWidget {
+class _FamilyResultCard extends StatefulWidget {
   const _FamilyResultCard({required this.family});
 
   final FamilySearchResult family;
 
   @override
+  State<_FamilyResultCard> createState() => _FamilyResultCardState();
+}
+
+class _FamilyResultCardState extends State<_FamilyResultCard> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final family = widget.family;
     final count = family.personCount;
     final countLabel = count == 1 ? '1 person' : '$count people';
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -85,81 +94,210 @@ class _FamilyResultCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => setState(() => _expanded = !_expanded),
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _MemberPreview(members: family.members),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            family.familyName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: FalimyTheme.ink,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            countLabel,
+                            style: const TextStyle(
+                              color: FalimyTheme.muted,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 220),
+                      child: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: FalimyTheme.muted,
+                        size: 28,
+                      ),
+                    ),
+                  ],
+                ),
+                AnimatedCrossFade(
+                  firstChild: const SizedBox(width: double.infinity),
+                  secondChild: _MemberList(members: family.members),
+                  crossFadeState: _expanded
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  duration: const Duration(milliseconds: 220),
+                  sizeCurve: Curves.easeOutCubic,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MemberPreview extends StatelessWidget {
+  const _MemberPreview({required this.members});
+
+  final List<FamilySearchMember> members;
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = members.take(3).toList();
+    if (shown.isEmpty) {
+      return const CircleAvatar(
+        radius: 22,
+        backgroundColor: Color(0xFFE8EEF8),
+        child: Icon(Icons.groups_rounded, color: FalimyTheme.seed, size: 22),
+      );
+    }
+
+    const radius = 16.0;
+    final overflow = members.length - shown.length;
+    final stackWidth =
+        radius * 2 + (shown.length - 1) * 18 + (overflow > 0 ? 18 : 0);
+
+    return SizedBox(
+      width: stackWidth,
+      height: radius * 2,
+      child: Stack(
         children: [
-          Text(
-            family.familyName,
-            style: const TextStyle(
-              color: FalimyTheme.ink,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              height: 1.2,
+          for (var i = 0; i < shown.length; i++)
+            Positioned(
+              left: i * 18.0,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: ProfileAvatar(
+                  photoPath: shown[i].photoPath,
+                  radius: radius,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            countLabel,
-            style: const TextStyle(
-              color: FalimyTheme.muted,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+          if (overflow > 0)
+            Positioned(
+              left: shown.length * 18.0,
+              child: CircleAvatar(
+                radius: radius,
+                backgroundColor: FalimyTheme.seed,
+                child: Text(
+                  '+$overflow',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 12,
-            runSpacing: 14,
-            children: [
-              for (final member in family.members)
-                _MemberTile(member: member),
-            ],
-          ),
         ],
       ),
     );
   }
 }
 
-class _MemberTile extends StatelessWidget {
-  const _MemberTile({required this.member});
+class _MemberList extends StatelessWidget {
+  const _MemberList({required this.members});
+
+  final List<FamilySearchMember> members;
+
+  @override
+  Widget build(BuildContext context) {
+    if (members.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 12),
+        child: Text(
+          'No people listed in this family yet.',
+          style: TextStyle(color: FalimyTheme.muted, fontSize: 14),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        children: [
+          const Divider(height: 20, color: Color(0xFFE8E9EB)),
+          for (var i = 0; i < members.length; i++) ...[
+            _MemberRow(member: members[i]),
+            if (i != members.length - 1) const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberRow extends StatelessWidget {
+  const _MemberRow({required this.member});
 
   final FamilySearchMember member;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 72,
-      child: Column(
-        children: [
-          ProfileAvatar(photoPath: member.photoPath, radius: 28),
-          const SizedBox(height: 8),
-          Text(
-            member.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: FalimyTheme.ink,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              height: 1.2,
-            ),
+    return Row(
+      children: [
+        ProfileAvatar(photoPath: member.photoPath, radius: 22),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                member.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: FalimyTheme.ink,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                member.role,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: FalimyTheme.muted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            member.role,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: FalimyTheme.muted,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

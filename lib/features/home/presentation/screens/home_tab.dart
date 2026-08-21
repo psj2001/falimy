@@ -13,11 +13,8 @@ import 'package:falimy/features/financial/presentation/screens/add_book_screen.d
 import 'package:falimy/features/financial/presentation/screens/book_detail_screen.dart';
 import 'package:falimy/features/assets/presentation/providers/asset_notifier.dart';
 import 'package:falimy/features/home/presentation/screens/add_salary_screen.dart';
-import 'package:falimy/features/home/presentation/providers/family_search_notifier.dart';
 import 'package:falimy/features/home/presentation/widgets/add_asset_insight_card.dart';
 import 'package:falimy/features/home/presentation/widgets/cash_book_insight_card.dart';
-import 'package:falimy/features/home/presentation/widgets/family_search_field.dart';
-import 'package:falimy/features/home/presentation/widgets/family_search_results.dart';
 import 'package:falimy/features/home/presentation/widgets/home_greeting_header.dart';
 import 'package:falimy/features/home/presentation/widgets/salary_insight_card.dart';
 import 'package:falimy/features/home/presentation/widgets/unexpected_expense_cards.dart';
@@ -29,7 +26,7 @@ import 'package:falimy/features/reminders/presentation/widgets/pay_reminder_insi
 import 'package:falimy/features/reminders/presentation/widgets/upcoming_pay_reminder_cards.dart';
 
 /// Dashboard landing tab: greeting + insight cards + monthly budget.
-class HomeTab extends ConsumerStatefulWidget {
+class HomeTab extends ConsumerWidget {
   const HomeTab({
     super.key,
     required this.onOpenProfile,
@@ -41,57 +38,29 @@ class HomeTab extends ConsumerStatefulWidget {
   final VoidCallback onOpenNotifications;
   final VoidCallback onOpenBudget;
 
-  @override
-  ConsumerState<HomeTab> createState() => _HomeTabState();
-}
-
-class _HomeTabState extends ConsumerState<HomeTab> {
-  late final TextEditingController _searchController;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _clearSearch() {
-    _searchController.clear();
-    ref.read(familySearchNotifierProvider.notifier).clear();
-  }
-
-  Future<void> _refresh() async {
+  Future<void> _refresh(WidgetRef ref) async {
     await ref.read(onboardingNotifierProvider.notifier).reload();
     await ref.read(financialNotifierProvider.notifier).load();
     await ref.read(notificationNotifierProvider.notifier).load();
     await ref.read(budgetNotifierProvider.notifier).load(silent: true);
     await ref.read(assetNotifierProvider.notifier).load();
     await ref.read(paymentReminderNotifierProvider.notifier).load();
-    final query = _searchController.text.trim();
-    if (query.isNotEmpty) {
-      ref.read(familySearchNotifierProvider.notifier).onQueryChanged(query);
-    }
   }
 
-  Future<void> _openAddSalary() async {
+  Future<void> _openAddSalary(BuildContext context) async {
     await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const AddSalaryScreen()));
   }
 
-  Future<void> _createCashBook() async {
+  Future<void> _createCashBook(BuildContext context) async {
     final monthName = DateFormat.MMMM().format(DateTime.now());
     final book = await Navigator.of(context).push<CashBook>(
       MaterialPageRoute(
         builder: (_) => AddBookScreen(initialName: '$monthName Expenses'),
       ),
     );
-    if (book == null || !mounted) return;
+    if (book == null || !context.mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) =>
@@ -110,7 +79,7 @@ class _HomeTabState extends ConsumerState<HomeTab> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(onboardingNotifierProvider);
     final notifications = ref.watch(notificationNotifierProvider);
     final financial = ref.watch(financialNotifierProvider);
@@ -118,19 +87,17 @@ class _HomeTabState extends ConsumerState<HomeTab> {
     final analysis = ref.watch(budgetAnalysisProvider);
     final assets = ref.watch(assetNotifierProvider);
     final reminders = ref.watch(paymentReminderNotifierProvider);
-    final search = ref.watch(familySearchNotifierProvider);
-    final searching = search.isActive;
     final showSalaryCard = _needsSalary(profile.salary);
     final hasAnyBook = financial.books.isNotEmpty;
     final showCashBookCard =
         !financial.isLoading && !_hasBookForCurrentMonth(financial.books);
 
     final insightCards = <Widget>[
-      if (showSalaryCard) SalaryInsightCard(onAddSalary: _openAddSalary),
+      if (showSalaryCard) SalaryInsightCard(onAddSalary: () => _openAddSalary(context)),
       if (showCashBookCard)
         CashBookInsightCard(
           hasAnyBook: hasAnyBook,
-          onCreateBook: _createCashBook,
+          onCreateBook: () => _createCashBook(context),
         ),
       AddAssetInsightCard(
         itemCount: assets.count(),
@@ -148,7 +115,7 @@ class _HomeTabState extends ConsumerState<HomeTab> {
         child: SafeArea(
           bottom: false,
           child: RefreshIndicator(
-            onRefresh: _refresh,
+            onRefresh: () => _refresh(ref),
             color: FalimyTheme.seed,
             child: ListView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -158,31 +125,14 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: HomeGreetingHeader(
                     profile: profile,
-                    onTapAvatar: widget.onOpenProfile,
-                    onTapNotifications: widget.onOpenNotifications,
+                    onTapAvatar: onOpenProfile,
+                    onTapNotifications: onOpenNotifications,
                     unreadCount: notifications.unreadCount,
                   ),
                 ),
                 const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: FamilySearchField(
-                    controller: _searchController,
-                    onChanged: ref
-                        .read(familySearchNotifierProvider.notifier)
-                        .onQueryChanged,
-                    onClear: _clearSearch,
-                  ),
-                ),
-                if (searching) ...[
-                  const SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: FamilySearchResults(state: search),
-                  ),
-                ] else ...[
-                  if (insightCards.isNotEmpty) ...[
-                  const SizedBox(height: 20),
+                if (insightCards.isNotEmpty) ...[
+                  const SizedBox(height: 4),
                   SizedBox(
                     height: 168,
                     child: ListView.separated(
@@ -210,14 +160,13 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                   child: _BudgetCard(
                     isLoading: budgetState.isLoading && analysis == null,
                     analysis: analysis,
-                    onOpen: widget.onOpenBudget,
+                    onOpen: onOpenBudget,
                   ),
                 ),
                 const SizedBox(height: 24),
                 const VehicleInsuranceCards(),
                 const UpcomingPayReminderCards(),
                 const UnexpectedExpenseCards(),
-                ],
               ],
             ),
           ),

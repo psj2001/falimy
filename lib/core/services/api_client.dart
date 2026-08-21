@@ -147,8 +147,8 @@ class ApiClient {
     if (response.body.isNotEmpty) {
       try {
         final decoded = jsonDecode(response.body);
-        if (decoded is Map<String, dynamic>) {
-          json = decoded;
+        if (decoded is Map) {
+          json = Map<String, dynamic>.from(decoded);
         }
       } catch (_) {
         // ignore non-JSON body

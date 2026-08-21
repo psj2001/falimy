@@ -105,7 +105,10 @@ userSchema.methods.toProfile = function toProfile() {
   const memberLinks = {};
   if (this.memberLinks) {
     for (const [key, value] of this.memberLinks.entries()) {
-      memberLinks[key] = value;
+      memberLinks[key] =
+        value && typeof value.toObject === 'function'
+          ? value.toObject()
+          : value;
     }
   }
 

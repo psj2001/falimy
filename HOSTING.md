@@ -34,13 +34,13 @@ git push -u origin main
 4. Render reads `render.yaml` and prompts for **MONGODB_URI** — paste your Atlas string.
 5. Click **Apply**. Wait until status is **Live**.
 
-Your URL will look like:
+The live API URL is:
 
-`https://falimy-api.onrender.com`
+`https://falimy-xhap.onrender.com`
 
 Check health:
 
-`https://falimy-api.onrender.com/health` → `{"ok":true,"service":"falimy-api"}`
+`https://falimy-xhap.onrender.com/health` → `{"ok":true,"service":"falimy-api"}`
 
 ### Manual create (if Blueprint fails)
 
@@ -66,8 +66,8 @@ Env vars:
 ## 3. Point Flutter at Render
 
 ```bash
-flutter run --dart-define=API_BASE_URL=https://falimy-api.onrender.com
-flutter build apk --dart-define=API_BASE_URL=https://falimy-api.onrender.com
+flutter run --dart-define=API_BASE_URL=https://falimy-xhap.onrender.com
+flutter build apk --dart-define=API_BASE_URL=https://falimy-xhap.onrender.com
 ```
 
 ## Notes

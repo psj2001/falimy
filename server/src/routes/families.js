@@ -23,7 +23,11 @@ function asLinks(raw) {
 function linkPhoto(link, photosById) {
   const userId = String(link?.userId || '');
   if (!userId) return null;
-  return photosById.get(userId) || null;
+  const photo = photosById.get(userId);
+  if (!photo) return null;
+  const path = String(photo || '').trim();
+  if (path.startsWith('https://') || path.startsWith('http://')) return path;
+  return null;
 }
 
 function addPerson(people, { name, photoPath, role }) {

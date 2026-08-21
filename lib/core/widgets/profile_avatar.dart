@@ -17,16 +17,22 @@ class ProfileAvatar extends StatelessWidget {
   final VoidCallback? onTap;
   final double radius;
 
+  String get _normalizedPath => photoPath?.trim() ?? '';
+
   bool get _isRemote {
-    final path = photoPath;
-    if (path == null || path.isEmpty) return false;
+    final path = _normalizedPath;
+    if (path.isEmpty) return false;
     return path.startsWith('http://') || path.startsWith('https://');
   }
 
   bool get _isLocalFile {
-    final path = photoPath;
-    if (path == null || path.isEmpty || _isRemote) return false;
-    return File(path).existsSync();
+    final path = _normalizedPath;
+    if (path.isEmpty || _isRemote) return false;
+    try {
+      return File(path).existsSync();
+    } catch (_) {
+      return false;
+    }
   }
 
   Widget _placeholder() {
@@ -44,10 +50,16 @@ class ProfileAvatar extends StatelessWidget {
     final size = radius * 2;
     if (_isRemote) {
       return Image.network(
-        photoPath!,
+        _normalizedPath,
+        key: ValueKey(_normalizedPath),
         width: size,
         height: size,
         fit: BoxFit.cover,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
+        headers: const {
+          'Accept': 'image/avif,image/webp,image/jpeg,image/png,image/*',
+        },
         errorBuilder: (_, _, _) => _placeholder(),
         loadingBuilder: (context, child, progress) {
           if (progress == null) return child;
@@ -66,7 +78,7 @@ class ProfileAvatar extends StatelessWidget {
     }
     if (_isLocalFile) {
       return Image.file(
-        File(photoPath!),
+        File(_normalizedPath),
         width: size,
         height: size,
         fit: BoxFit.cover,

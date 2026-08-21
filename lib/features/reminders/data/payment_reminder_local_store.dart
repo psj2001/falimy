@@ -5,12 +5,34 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:falimy/features/reminders/domain/payment_reminder.dart';
 
 class PaymentReminderLocalStore {
-  static const _key = 'falimy_pay_reminders_v1';
-  static const _readKey = 'falimy_pay_reminders_read_v1';
+  PaymentReminderLocalStore({this.userId});
+
+  static const _legacyKey = 'falimy_pay_reminders_v1';
+  static const _legacyReadKey = 'falimy_pay_reminders_read_v1';
+
+  final String? userId;
+
+  String get _key {
+    final id = userId?.trim() ?? '';
+    if (id.isEmpty) return _legacyKey;
+    return '${_legacyKey}_$id';
+  }
+
+  String get _readKey {
+    final id = userId?.trim() ?? '';
+    if (id.isEmpty) return _legacyReadKey;
+    return '${_legacyReadKey}_$id';
+  }
 
   Future<List<PaymentReminder>> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
+    var raw = prefs.getString(_key);
+    if ((raw == null || raw.isEmpty) && _key != _legacyKey) {
+      raw = prefs.getString(_legacyKey);
+      if (raw != null && raw.isNotEmpty) {
+        await prefs.setString(_key, raw);
+      }
+    }
     if (raw == null || raw.isEmpty) return const [];
 
     final json = jsonDecode(raw);
@@ -31,8 +53,14 @@ class PaymentReminderLocalStore {
 
   Future<Set<String>> loadReadInboxIds() async {
     final prefs = await SharedPreferences.getInstance();
-    final values = prefs.getStringList(_readKey) ?? const [];
-    return values.toSet();
+    var values = prefs.getStringList(_readKey);
+    if ((values == null || values.isEmpty) && _readKey != _legacyReadKey) {
+      values = prefs.getStringList(_legacyReadKey);
+      if (values != null && values.isNotEmpty) {
+        await prefs.setStringList(_readKey, values);
+      }
+    }
+    return values?.toSet() ?? {};
   }
 
   Future<void> markInboxRead(String id) async {

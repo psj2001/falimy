@@ -5,11 +5,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:falimy/features/assets/domain/entities/family_asset.dart';
 
 class AssetLocalStore {
-  static const _key = 'falimy_assets_v1';
+  AssetLocalStore({this.userId});
+
+  static const _legacyKey = 'falimy_assets_v1';
+
+  final String? userId;
+
+  String get _key {
+    final id = userId?.trim() ?? '';
+    if (id.isEmpty) return _legacyKey;
+    return '${_legacyKey}_$id';
+  }
 
   Future<List<FamilyAsset>> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
+    var raw = prefs.getString(_key);
+    if ((raw == null || raw.isEmpty) && _key != _legacyKey) {
+      raw = prefs.getString(_legacyKey);
+      if (raw != null && raw.isNotEmpty) {
+        await prefs.setString(_key, raw);
+      }
+    }
     if (raw == null || raw.isEmpty) return const [];
 
     final json = jsonDecode(raw);

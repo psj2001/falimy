@@ -9,6 +9,7 @@ const { signToken, authRequired } = require('../middleware/auth');
 const { sendSignupOtp, isMailConfigured } = require('../services/mail');
 const { normalizeReferralCode } = require('../utils/referral');
 const { reciprocalMemberLinks } = require('../utils/familyLinks');
+const { hydrateProfile } = require('../utils/hydrateProfile');
 const config = require('../config');
 
 const router = express.Router();
@@ -460,7 +461,7 @@ router.post('/verify-email', async (req, res) => {
     return res.status(201).json({
       token: signToken(fresh),
       user: fresh.toPublic(),
-      profile: fresh.toProfile(),
+      profile: await hydrateProfile(fresh),
       claimedInvites,
     });
   } catch (err) {
@@ -564,7 +565,7 @@ router.post('/sign-in', async (req, res) => {
     return res.json({
       token: signToken(fresh),
       user: fresh.toPublic(),
-      profile: fresh.toProfile(),
+      profile: await hydrateProfile(fresh),
       claimedInvites,
     });
   } catch (err) {
@@ -586,7 +587,7 @@ router.get('/me', authRequired, async (req, res) => {
     }
     return res.json({
       user: user.toPublic(),
-      profile: user.toProfile(),
+      profile: await hydrateProfile(user),
       token: signToken(user),
     });
   } catch (err) {

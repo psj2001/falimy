@@ -162,6 +162,30 @@ class FamilyProfile extends Equatable {
     return children.isNotEmpty && (kind == 'father' || kind == 'mother');
   }
 
+  /// Cloud photo for a tree slot. Falls back to any linked account with the
+  /// same name so a sibling/parent still shows after the invite keys shift.
+  String? photoForMember(String memberKey, {String? name}) {
+    final fromKey = _usablePhoto(memberLinks[memberKey]?.photoPath);
+    if (fromKey != null) return fromKey;
+    final needle = name?.trim().toLowerCase() ?? '';
+    if (needle.isEmpty) return null;
+    for (final link in memberLinks.values) {
+      if (link.name.trim().toLowerCase() != needle) continue;
+      final photo = _usablePhoto(link.photoPath);
+      if (photo != null) return photo;
+    }
+    return null;
+  }
+
+  static String? _usablePhoto(String? path) {
+    final value = path?.trim() ?? '';
+    if (value.isEmpty) return null;
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value;
+    }
+    return null;
+  }
+
   FamilyProfile copyWith({
     String? fullName,
     DateTime? dateOfBirth,

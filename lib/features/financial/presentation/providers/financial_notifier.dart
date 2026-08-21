@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:falimy/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:falimy/features/financial/domain/entities/cash_book.dart';
 import 'package:falimy/features/financial/domain/entities/cash_entry.dart';
 import 'package:falimy/features/financial/domain/entities/entry_category.dart';
@@ -117,6 +118,9 @@ class FinancialState extends Equatable {
 class FinancialNotifier extends Notifier<FinancialState> {
   @override
   FinancialState build() {
+    ref.listen(authNotifierProvider.select((s) => s.user?.id), (previous, next) {
+      if (previous != next) Future.microtask(load);
+    });
     Future.microtask(load);
     return const FinancialState();
   }

@@ -75,12 +75,12 @@ class FamilySearchResult extends Equatable {
     add(
       profile.fatherName,
       'Father',
-      profile.memberLinks['father']?.photoPath,
+      profile.photoForMember('father', name: profile.fatherName),
     );
     add(
       profile.motherName,
       'Mother',
-      profile.memberLinks['mother']?.photoPath,
+      profile.photoForMember('mother', name: profile.motherName),
     );
 
     for (var i = 0; i < profile.siblings.length; i++) {
@@ -89,7 +89,11 @@ class FamilySearchResult extends Equatable {
       final role = sibling.gender == SiblingGender.male
           ? (isElder ? 'Elder brother' : 'Younger brother')
           : (isElder ? 'Elder sister' : 'Younger sister');
-      add(sibling.name, role, profile.memberLinks['sibling_$i']?.photoPath);
+      add(
+        sibling.name,
+        role,
+        profile.photoForMember('sibling_$i', name: sibling.name),
+      );
     }
 
     if (profile.isMarried == true && profile.spouse != null) {
@@ -102,7 +106,7 @@ class FamilySearchResult extends Equatable {
       add(
         profile.spouse!.name,
         role,
-        profile.memberLinks['spouse']?.photoPath,
+        profile.photoForMember('spouse', name: profile.spouse?.name),
       );
     }
 
@@ -110,7 +114,7 @@ class FamilySearchResult extends Equatable {
       add(
         profile.children[i].name,
         'Child',
-        profile.memberLinks['child_$i']?.photoPath,
+        profile.photoForMember('child_$i', name: profile.children[i].name),
       );
     }
 

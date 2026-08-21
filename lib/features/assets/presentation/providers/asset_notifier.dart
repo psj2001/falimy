@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:falimy/features/assets/domain/asset_category.dart';
 import 'package:falimy/features/assets/domain/entities/family_asset.dart';
 import 'package:falimy/features/assets/presentation/providers/asset_repository_provider.dart';
+import 'package:falimy/features/auth/presentation/providers/auth_notifier.dart';
 
 class AssetState extends Equatable {
   const AssetState({
@@ -82,6 +83,9 @@ class AssetState extends Equatable {
 class AssetNotifier extends Notifier<AssetState> {
   @override
   AssetState build() {
+    ref.listen(authNotifierProvider.select((s) => s.user?.id), (previous, next) {
+      if (previous != next) Future.microtask(load);
+    });
     Future.microtask(load);
     return const AssetState();
   }

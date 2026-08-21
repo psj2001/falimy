@@ -34,4 +34,9 @@ class LocalAssetRepository implements AssetRepository {
     _cache = _cache.where((a) => a.id != id).toList();
     await _store.save(_cache);
   }
+
+  Future<void> replaceAll(List<FamilyAsset> assets) async {
+    _cache = assets;
+    await _store.save(_cache);
+  }
 }

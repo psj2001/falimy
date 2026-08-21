@@ -17,7 +17,7 @@ class PillBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(40),
@@ -33,7 +33,7 @@ class PillBottomNav extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) const SizedBox(width: 4),
+            if (i > 0) const SizedBox(width: 2),
             _PillNavButton(
               item: items[i],
               selected: i == selectedIndex,
@@ -80,7 +80,7 @@ class _PillNavButton extends StatelessWidget {
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
           padding: EdgeInsets.symmetric(
-            horizontal: selected ? 14 : 12,
+            horizontal: selected ? 12 : 10,
             vertical: 10,
           ),
           decoration: BoxDecoration(

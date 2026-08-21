@@ -2,6 +2,7 @@ const express = require('express');
 const User = require('../models/User');
 const { authRequired } = require('../middleware/auth');
 const { reciprocalMemberLinks } = require('../utils/familyLinks');
+const { hydrateProfile, isRemotePhoto } = require('../utils/hydrateProfile');
 
 const router = express.Router();
 
@@ -135,37 +136,6 @@ async function ensureReciprocalLinks(user) {
   return fresh || user;
 }
 
-async function profileWithLinkedMembers(user) {
-  const profile = user.toProfile();
-  const links = profile.memberLinks || {};
-  const userIds = Object.values(links)
-    .map((link) => link?.userId)
-    .filter(Boolean);
-  if (!userIds.length) return profile;
-
-  const linkedUsers = await User.find({ _id: { $in: userIds } }).select(
-    'fullName photoPath email',
-  );
-  const byId = new Map(
-    linkedUsers.map((linked) => [linked._id.toString(), linked]),
-  );
-
-  for (const [memberKey, value] of Object.entries(links)) {
-    const raw =
-      value && typeof value.toObject === 'function' ? value.toObject() : value;
-    const linked = byId.get(String(raw?.userId || ''));
-    links[memberKey] = {
-      ...raw,
-      name: linked?.fullName || raw?.name || '',
-      email: linked?.email || raw?.email || '',
-      photoPath: linked?.photoPath || null,
-      joined: Boolean(linked),
-    };
-  }
-  profile.memberLinks = links;
-  return profile;
-}
-
 router.get('/', authRequired, async (req, res) => {
   try {
     let user = await User.findById(req.userId);
@@ -174,7 +144,7 @@ router.get('/', authRequired, async (req, res) => {
     }
     user = await ensureFamilyFromLinkedInvite(user);
     user = await ensureReciprocalLinks(user);
-    return res.json({ profile: await profileWithLinkedMembers(user) });
+    return res.json({ profile: await hydrateProfile(user) });
   } catch (err) {
     console.error('get profile', err);
     return res.status(500).json({ message: 'Failed to load profile' });
@@ -188,7 +158,6 @@ router.put('/', authRequired, async (req, res) => {
       fullName: body.fullName ?? null,
       dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : null,
       familyName: body.familyName ?? null,
-      photoPath: body.photoPath ?? null,
       fatherName: body.fatherName ?? null,
       motherName: body.motherName ?? null,
       siblings: Array.isArray(body.siblings) ? body.siblings : [],
@@ -203,6 +172,12 @@ router.put('/', authRequired, async (req, res) => {
       studyClassOrCourse: body.studyClassOrCourse ?? null,
     };
 
+    if (body.photoPath === null || body.photoPath === '') {
+      updates.photoPath = null;
+    } else if (isRemotePhoto(body.photoPath)) {
+      updates.photoPath = String(body.photoPath).trim();
+    }
+
     const user = await User.findByIdAndUpdate(
       req.userId,
       { $set: updates },
@@ -213,7 +188,7 @@ router.put('/', authRequired, async (req, res) => {
       return res.status(404).json({ message: 'Profile not found' });
     }
 
-    return res.json({ profile: user.toProfile() });
+    return res.json({ profile: await hydrateProfile(user) });
   } catch (err) {
     console.error('save profile', err);
     return res.status(500).json({ message: 'Failed to save profile' });

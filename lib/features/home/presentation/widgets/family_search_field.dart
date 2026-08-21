@@ -8,11 +8,13 @@ class FamilySearchField extends StatelessWidget {
     required this.controller,
     required this.onChanged,
     required this.onClear,
+    this.focusNode,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +35,7 @@ class FamilySearchField extends StatelessWidget {
           ),
           child: TextField(
             controller: controller,
+            focusNode: focusNode,
             onChanged: onChanged,
             textInputAction: TextInputAction.search,
             style: const TextStyle(
