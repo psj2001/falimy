@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:falimy/app/theme.dart';
+import 'package:falimy/core/currency/app_currency.dart';
 import 'package:falimy/core/widgets/primary_button.dart';
 import 'package:falimy/features/financial/domain/entities/cash_entry.dart';
 import 'package:falimy/features/financial/domain/entities/entry_category.dart';
@@ -10,6 +11,7 @@ import 'package:falimy/features/financial/presentation/providers/financial_notif
 import 'package:falimy/features/financial/presentation/screens/choose_category_screen.dart';
 import 'package:falimy/features/financial/presentation/screens/payment_modes_screen.dart';
 import 'package:falimy/features/financial/presentation/widgets/financial_format.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
 class AddEntryScreen extends ConsumerStatefulWidget {
   const AddEntryScreen({
@@ -274,6 +276,9 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                             ),
                           ],
                         ),
+                      ),
+                      prefixText: AppCurrency.prefix(
+                        ref.watch(preferredCurrencyProvider),
                       ),
                     ),
                   ),

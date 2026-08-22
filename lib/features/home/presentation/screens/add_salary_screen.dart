@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:falimy/core/currency/app_currency.dart';
 import 'package:falimy/core/widgets/onboarding_scaffold.dart';
 import 'package:falimy/core/widgets/primary_button.dart';
 import 'package:falimy/features/home/presentation/screens/salary_cash_book_prompt_screen.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
-class AddSalaryScreen extends StatefulWidget {
+class AddSalaryScreen extends ConsumerStatefulWidget {
   const AddSalaryScreen({super.key});
 
   @override
-  State<AddSalaryScreen> createState() => _AddSalaryScreenState();
+  ConsumerState<AddSalaryScreen> createState() => _AddSalaryScreenState();
 }
 
-class _AddSalaryScreenState extends State<AddSalaryScreen> {
+class _AddSalaryScreenState extends ConsumerState<AddSalaryScreen> {
   final _formKey = GlobalKey<FormState>();
   final _salaryController = TextEditingController();
 
@@ -40,6 +43,8 @@ class _AddSalaryScreenState extends State<AddSalaryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currency = ref.watch(preferredCurrencyProvider);
+
     return OnboardingScaffold(
       title: 'How much is your salary?',
       subtitle: 'Enter your monthly take-home amount',
@@ -64,9 +69,9 @@ class _AddSalaryScreenState extends State<AddSalaryScreen> {
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Monthly salary',
-                prefixText: 'AED  ',
+                prefixText: AppCurrency.prefix(currency),
               ),
               validator: (value) {
                 final parsed = num.tryParse(

@@ -89,7 +89,10 @@ class _SalaryCashBookPromptScreenState
 
   @override
   Widget build(BuildContext context) {
-    final amount = BudgetFormat.money(widget.salary);
+    final amount = BudgetFormat.money(
+      widget.salary,
+      currency: ref.watch(preferredCurrencyProvider),
+    );
 
     return OnboardingScaffold(
       title: 'Add salary to cash book?',

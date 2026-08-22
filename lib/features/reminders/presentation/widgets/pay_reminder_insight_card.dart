@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:falimy/app/theme.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 import 'package:falimy/features/reminders/domain/payment_reminder.dart';
 import 'package:falimy/features/reminders/presentation/screens/add_edit_payment_reminder_screen.dart';
 import 'package:falimy/features/reminders/presentation/screens/payment_reminders_screen.dart';
 
-class PayReminderInsightCard extends StatelessWidget {
+class PayReminderInsightCard extends ConsumerWidget {
   const PayReminderInsightCard({super.key, this.next});
 
   final PaymentReminder? next;
@@ -23,11 +25,12 @@ class PayReminderInsightCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final reminder = next;
     final hasReminders = reminder != null;
     final title = hasReminders ? 'Pay reminders' : 'Pay reminder';
     final buttonLabel = hasReminders ? 'View reminders' : 'Add reminder';
+    final currency = ref.watch(preferredCurrencyProvider);
 
     return Material(
       color: Colors.transparent,
@@ -104,7 +107,7 @@ class PayReminderInsightCard extends StatelessWidget {
                             ),
                             TextSpan(
                               text:
-                                  ' · ${reminder.amountLabel}. ${reminder.dueLabel()}.',
+                                  ' · ${reminder.amountLabel(currency)}. ${reminder.dueLabel()}.',
                             ),
                           ],
                         ),

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:falimy/app/theme.dart';
 import 'package:falimy/features/financial/domain/entities/cash_entry.dart';
 import 'package:falimy/features/financial/presentation/widgets/financial_format.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
-class EntryTile extends StatelessWidget {
+class EntryTile extends ConsumerWidget {
   const EntryTile({
     super.key,
     required this.entry,
@@ -17,9 +19,10 @@ class EntryTile extends StatelessWidget {
   final VoidCallback? onLongPress;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isIn = entry.isCashIn;
     final amountColor = isIn ? FalimyTheme.seed : const Color(0xFFC1121F);
+    final currency = ref.watch(preferredCurrencyProvider);
 
     return InkWell(
       onLongPress: onLongPress,
@@ -48,7 +51,7 @@ class EntryTile extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  FinancialFormat.amount(entry.amount),
+                  FinancialFormat.amount(entry.amount, currency: currency),
                   style: TextStyle(
                     color: amountColor,
                     fontWeight: FontWeight.w700,
@@ -61,7 +64,7 @@ class EntryTile extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'Balance: ${FinancialFormat.amount(runningBalance)}',
+                'Balance: ${FinancialFormat.amount(runningBalance, currency: currency)}',
                 style: const TextStyle(
                   color: FalimyTheme.muted,
                   fontSize: 12,

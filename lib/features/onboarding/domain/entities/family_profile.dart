@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'package:falimy/core/currency/app_currency.dart';
+
 enum SiblingGender { male, female }
 
 enum SiblingSeniority { elder, younger }
@@ -120,6 +122,7 @@ class FamilyProfile extends Equatable {
     this.companyName,
     this.salary,
     this.studyClassOrCourse,
+    this.currency = AppCurrency.defaultCode,
     this.linkedInviterName,
     this.linkedMemberKind,
     this.linkedMemberRole,
@@ -143,6 +146,7 @@ class FamilyProfile extends Equatable {
   final String? companyName;
   final num? salary;
   final String? studyClassOrCourse;
+  final String currency;
   final String? linkedInviterName;
   final String? linkedMemberKind;
   final String? linkedMemberRole;
@@ -209,6 +213,7 @@ class FamilyProfile extends Equatable {
     bool clearSalary = false,
     String? studyClassOrCourse,
     bool clearStudyClassOrCourse = false,
+    String? currency,
     String? linkedInviterName,
     String? linkedMemberKind,
     String? linkedMemberRole,
@@ -237,6 +242,7 @@ class FamilyProfile extends Equatable {
       studyClassOrCourse: clearStudyClassOrCourse
           ? null
           : (studyClassOrCourse ?? this.studyClassOrCourse),
+      currency: currency ?? this.currency,
       linkedInviterName: linkedInviterName ?? this.linkedInviterName,
       linkedMemberKind: linkedMemberKind ?? this.linkedMemberKind,
       linkedMemberRole: linkedMemberRole ?? this.linkedMemberRole,
@@ -263,6 +269,7 @@ class FamilyProfile extends Equatable {
         companyName,
         salary,
         studyClassOrCourse,
+        currency,
         linkedInviterName,
         linkedMemberKind,
         linkedMemberRole,

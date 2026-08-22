@@ -353,7 +353,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               const SizedBox(height: 12),
               AppTextField(
-                label: 'Salary (optional)',
+                label: 'Salary (optional, ${ref.watch(preferredCurrencyProvider)})',
                 controller: _salary,
                 keyboardType: TextInputType.number,
               ),

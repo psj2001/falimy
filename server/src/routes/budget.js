@@ -1,6 +1,8 @@
 const express = require('express');
 const Budget = require('../models/Budget');
+const User = require('../models/User');
 const { authRequired } = require('../middleware/auth');
+const { normalizeCurrency } = require('../utils/currency');
 
 const router = express.Router();
 
@@ -31,10 +33,10 @@ function item(id, name, extra = []) {
   return { id, name, planned: 0, matchKeys: matchKeys(name, extra) };
 }
 
-function defaultBudget(month) {
+function defaultBudget(month, currency = 'AED') {
   return {
     month,
-    currency: 'AED',
+    currency: normalizeCurrency(currency),
     savingsTargetPercent: 20,
     isDefault: true,
     incomes: [{ id: 'inc-salary', name: 'Salary', amount: 0 }],
@@ -244,7 +246,7 @@ function defaultBudget(month) {
 function toJson(doc) {
   return {
     month: doc.month,
-    currency: doc.currency || 'AED',
+    currency: normalizeCurrency(doc.currency),
     savingsTargetPercent: doc.savingsTargetPercent ?? 20,
     incomes: Array.isArray(doc.incomes) ? doc.incomes : [],
     categories: Array.isArray(doc.categories) ? doc.categories : [],
@@ -275,7 +277,10 @@ router.get('/', async (req, res, next) => {
       month,
     }).lean();
     if (!doc) {
-      return res.json({ budget: defaultBudget(month) });
+      const user = await User.findById(req.userId).select('currency');
+      return res.json({
+        budget: defaultBudget(month, user?.currency),
+      });
     }
     return res.json({ budget: toJson(doc) });
   } catch (err) {
@@ -301,7 +306,7 @@ router.put('/:month', async (req, res, next) => {
       {
         ownerUserId: req.userId,
         month,
-        currency: typeof body.currency === 'string' ? body.currency : 'AED',
+        currency: normalizeCurrency(body.currency),
         savingsTargetPercent:
           typeof body.savingsTargetPercent === 'number'
             ? body.savingsTargetPercent

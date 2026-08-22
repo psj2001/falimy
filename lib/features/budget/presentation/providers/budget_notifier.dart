@@ -69,6 +69,9 @@ class BudgetNotifier extends Notifier<BudgetState> {
     ref.listen(onboardingNotifierProvider.select((s) => s.salary), (_, next) {
       _applySalaryIfNeeded(next);
     });
+    ref.listen(preferredCurrencyProvider, (_, next) {
+      _applyCurrency(next);
+    });
     ref.onDispose(() {
       _saveTimer?.cancel();
     });
@@ -100,21 +103,28 @@ class BudgetNotifier extends Notifier<BudgetState> {
     );
     try {
       var budget = await _repo.load(monthKey);
+      final loadedCurrency = budget.currency;
       budget = _prefillSalary(budget);
+      budget = _withPreferredCurrency(budget);
       state = state.copyWith(
         budget: budget,
         monthKey: monthKey,
         isLoading: false,
         clearError: true,
       );
-      if (budget.isDefault && budget.totalIncome > 0) {
+      if ((budget.isDefault && budget.totalIncome > 0) ||
+          budget.currency != loadedCurrency) {
         _scheduleSave();
       }
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: e.toString().replaceFirst('Exception: ', ''),
-        budget: state.budget ?? defaultMonthlyBudget(monthKey),
+        budget: state.budget ??
+            defaultMonthlyBudget(
+              monthKey,
+              currency: ref.read(preferredCurrencyProvider),
+            ),
       );
     }
   }
@@ -122,6 +132,20 @@ class BudgetNotifier extends Notifier<BudgetState> {
   MonthlyBudget _prefillSalary(MonthlyBudget budget) {
     final salary = ref.read(onboardingNotifierProvider).salary;
     return _withSalary(budget, salary);
+  }
+
+  MonthlyBudget _withPreferredCurrency(MonthlyBudget budget) {
+    final currency = ref.read(preferredCurrencyProvider);
+    if (budget.currency == currency) return budget;
+    return budget.copyWith(currency: currency);
+  }
+
+  void _applyCurrency(String currency) {
+    final budget = state.budget;
+    if (budget == null) return;
+    final next = _withPreferredCurrency(budget);
+    if (next == budget) return;
+    _replace(next);
   }
 
   void _applySalaryIfNeeded(num? salary) {

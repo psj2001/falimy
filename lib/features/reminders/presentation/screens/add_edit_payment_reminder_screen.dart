@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:falimy/app/theme.dart';
+import 'package:falimy/core/currency/app_currency.dart';
 import 'package:falimy/core/widgets/app_text_field.dart';
 import 'package:falimy/core/widgets/onboarding_scaffold.dart';
 import 'package:falimy/core/widgets/primary_button.dart';
@@ -10,6 +11,7 @@ import 'package:falimy/core/widgets/result_dialog.dart';
 import 'package:falimy/features/reminders/data/payment_reminder_notifications.dart';
 import 'package:falimy/features/reminders/domain/payment_reminder.dart';
 import 'package:falimy/features/reminders/presentation/providers/payment_reminder_notifier.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
 class AddEditPaymentReminderScreen extends ConsumerStatefulWidget {
   const AddEditPaymentReminderScreen({super.key, this.existing});
@@ -163,6 +165,7 @@ class _AddEditPaymentReminderScreenState
 
   @override
   Widget build(BuildContext context) {
+    final currency = ref.watch(preferredCurrencyProvider);
     return OnboardingScaffold(
       title: _isEditing ? 'Edit reminder' : 'Pay reminder',
       subtitle:
@@ -221,9 +224,9 @@ class _AddEditPaymentReminderScreenState
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
               ],
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Amount',
-                prefixText: 'AED  ',
+                prefixText: AppCurrency.prefix(currency),
               ),
               validator: (value) {
                 final parsed = num.tryParse(

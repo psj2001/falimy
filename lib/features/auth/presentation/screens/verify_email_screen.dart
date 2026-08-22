@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/theme.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/services/device_location.dart';
-import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/otp_code_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../providers/auth_notifier.dart';
 import '../../../onboarding/presentation/providers/onboarding_notifier.dart';
@@ -40,6 +41,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   }
 
   Future<void> _verify() async {
+    if (ref.read(authNotifierProvider).isLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
     final location = await captureDeviceLocation(requestPermission: false);
@@ -127,65 +129,85 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Verify email',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Enter the 6-digit code we sent to ${widget.email}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                if (auth.pendingDevOtp != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    'Dev OTP: ${auth.pendingDevOtp}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
+          child: AutofillGroup(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: FalimyTheme.mistBlue,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.mark_email_unread_outlined,
+                        color: FalimyTheme.seed,
+                        size: 28,
+                      ),
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Enter verification code',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'We sent a 6-digit code to',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.email,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (auth.pendingDevOtp != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'Dev OTP: ${auth.pendingDevOtp}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 32),
+                  OtpCodeField(
+                    controller: _otpController,
+                    enabled: !auth.isLoading,
+                    onCompleted: (_) {
+                      if (!auth.isLoading) _verify();
+                    },
+                  ),
+                  const SizedBox(height: 28),
+                  PrimaryButton(
+                    label: 'Verify & continue',
+                    isLoading: auth.isLoading,
+                    onPressed: _verify,
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: (auth.isLoading || _resending) ? null : _resend,
+                    child: _resending
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text("Didn't get a code? Resend"),
+                  ),
+                  TextButton(
+                    onPressed: () => context.go(AppRoutes.signUp),
+                    child: const Text('Back to sign up'),
+                  ),
                 ],
-                const SizedBox(height: 36),
-                AppTextField(
-                  label: 'Verification code',
-                  controller: _otpController,
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.done,
-                  validator: (v) {
-                    final value = (v ?? '').trim();
-                    if (!RegExp(r'^\d{6}$').hasMatch(value)) {
-                      return 'Enter the 6-digit code';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 28),
-                PrimaryButton(
-                  label: 'Verify & continue',
-                  isLoading: auth.isLoading,
-                  onPressed: _verify,
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: (auth.isLoading || _resending) ? null : _resend,
-                  child: _resending
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Resend code'),
-                ),
-                TextButton(
-                  onPressed: () => context.go(AppRoutes.signUp),
-                  child: const Text('Back to sign up'),
-                ),
-              ],
+              ),
             ),
           ),
         ),

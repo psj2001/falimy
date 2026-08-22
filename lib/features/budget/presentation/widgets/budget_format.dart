@@ -1,11 +1,11 @@
+import 'package:falimy/core/currency/app_currency.dart';
 import 'package:intl/intl.dart';
 
 class BudgetFormat {
-  static final NumberFormat _amount = NumberFormat('#,##0.##');
   static final DateFormat _month = DateFormat('MMMM yyyy');
 
-  static String money(num value, {String currency = 'AED'}) {
-    return '$currency ${_amount.format(value)}';
+  static String money(num value, {String currency = AppCurrency.defaultCode}) {
+    return AppCurrency.format(value, currency: currency);
   }
 
   static String percent(num value, {int decimals = 1}) {

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:falimy/app/theme.dart';
 import 'package:falimy/features/budget/presentation/widgets/budget_format.dart';
 import 'package:falimy/features/assets/presentation/screens/assets_home_screen.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
 /// Home prompt / entry card for family assets.
-class AddAssetInsightCard extends StatelessWidget {
+class AddAssetInsightCard extends ConsumerWidget {
   const AddAssetInsightCard({
     super.key,
     required this.itemCount,
@@ -22,10 +24,11 @@ class AddAssetInsightCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hasAssets = itemCount > 0;
     final title = hasAssets ? 'Family assets' : 'Add Asset';
     final buttonLabel = hasAssets ? 'View assets' : 'Add Asset';
+    final currency = ref.watch(preferredCurrencyProvider);
 
     return Material(
       color: Colors.transparent,
@@ -94,7 +97,10 @@ class AddAssetInsightCard extends StatelessWidget {
                           ),
                           children: [
                             TextSpan(
-                              text: BudgetFormat.money(totalValue),
+                              text: BudgetFormat.money(
+                                totalValue,
+                                currency: currency,
+                              ),
                               style: const TextStyle(
                                 color: FalimyTheme.ink,
                                 fontWeight: FontWeight.w700,

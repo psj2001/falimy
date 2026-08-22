@@ -38,6 +38,7 @@ class _AssetsHomeScreenState extends ConsumerState<AssetsHomeScreen> {
     final owners = ownersFromProfile(profile);
     final total = assetState.totalValue(ownerId: _ownerFilter);
     final count = assetState.count(ownerId: _ownerFilter);
+    final currency = ref.watch(preferredCurrencyProvider);
 
     return Scaffold(
       backgroundColor: FalimyTheme.mistBlueSoft,
@@ -120,6 +121,7 @@ class _AssetsHomeScreenState extends ConsumerState<AssetsHomeScreen> {
                         isLoading: assetState.isLoading,
                         total: total,
                         itemCount: count,
+                        currency: currency,
                       ),
                       const SizedBox(height: 24),
                       const Text(
@@ -150,6 +152,7 @@ class _AssetsHomeScreenState extends ConsumerState<AssetsHomeScreen> {
                                 ownerId: _ownerFilter,
                                 category: category,
                               ),
+                              currency: currency,
                               onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
@@ -181,11 +184,13 @@ class _WealthCard extends StatelessWidget {
     required this.isLoading,
     required this.total,
     required this.itemCount,
+    required this.currency,
   });
 
   final bool isLoading;
   final double total;
   final int itemCount;
+  final String currency;
 
   @override
   Widget build(BuildContext context) {
@@ -233,7 +238,7 @@ class _WealthCard extends StatelessWidget {
             )
           else ...[
             Text(
-              BudgetFormat.money(total),
+              BudgetFormat.money(total, currency: currency),
               style: const TextStyle(
                 color: FalimyTheme.ink,
                 fontSize: 28,
@@ -264,12 +269,14 @@ class _CategoryTile extends StatelessWidget {
     required this.category,
     required this.count,
     required this.value,
+    required this.currency,
     required this.onTap,
   });
 
   final AssetCategory category;
   final int count;
   final double value;
+  final String currency;
   final VoidCallback onTap;
 
   @override
@@ -313,7 +320,7 @@ class _CategoryTile extends StatelessWidget {
               const SizedBox(height: 4),
               Expanded(
                 child: Text(
-                  '$count ${count == 1 ? 'item' : 'items'} · ${BudgetFormat.money(value)}',
+                  '$count ${count == 1 ? 'item' : 'items'} · ${BudgetFormat.money(value, currency: currency)}',
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

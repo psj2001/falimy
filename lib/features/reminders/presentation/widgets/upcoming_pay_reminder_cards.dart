@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:falimy/app/theme.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 import 'package:falimy/features/reminders/domain/payment_reminder.dart';
 import 'package:falimy/features/reminders/presentation/providers/payment_reminder_notifier.dart';
 import 'package:falimy/features/reminders/presentation/screens/add_edit_payment_reminder_screen.dart';
@@ -27,6 +28,7 @@ class _UpcomingPayReminderCardsState
     final dueSoon = ref.watch(
       paymentReminderNotifierProvider.select((s) => s.dueSoon()),
     );
+    final currency = ref.watch(preferredCurrencyProvider);
     final pending = dueSoon.where(
       (item) =>
           item.needsPaymentPrompt &&
@@ -83,6 +85,7 @@ class _UpcomingPayReminderCardsState
             if (i > 0) const SizedBox(height: 10),
             _ReminderCard(
               reminder: dueSoon[i],
+              currency: currency,
               onOpen: () => _open(dueSoon[i]),
               onPaid: () => recordReminderAsPaid(context, ref, dueSoon[i]),
               onNotPaid: () {
@@ -137,12 +140,14 @@ class _UpcomingPayReminderCardsState
 class _ReminderCard extends StatelessWidget {
   const _ReminderCard({
     required this.reminder,
+    required this.currency,
     required this.onOpen,
     required this.onPaid,
     required this.onNotPaid,
   });
 
   final PaymentReminder reminder;
+  final String currency;
   final VoidCallback onOpen;
   final VoidCallback onPaid;
   final VoidCallback onNotPaid;
@@ -204,7 +209,7 @@ class _ReminderCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${reminder.amountLabel}'
+                          '${reminder.amountLabel(currency)}'
                           '${reminder.monthly ? ' · Monthly' : ''}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

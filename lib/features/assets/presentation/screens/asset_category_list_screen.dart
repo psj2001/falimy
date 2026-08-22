@@ -8,6 +8,7 @@ import 'package:falimy/features/assets/presentation/screens/add_edit_asset_scree
 import 'package:falimy/features/assets/presentation/screens/asset_detail_screen.dart';
 import 'package:falimy/features/assets/presentation/widgets/asset_type_image.dart';
 import 'package:falimy/features/budget/presentation/widgets/budget_format.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
 class AssetCategoryListScreen extends ConsumerWidget {
   const AssetCategoryListScreen({
@@ -38,6 +39,7 @@ class AssetCategoryListScreen extends ConsumerWidget {
       ),
     );
     final total = items.fold<double>(0, (sum, a) => sum + a.value);
+    final currency = ref.watch(preferredCurrencyProvider);
 
     return Scaffold(
       backgroundColor: FalimyTheme.mistBlueSoft,
@@ -82,7 +84,7 @@ class AssetCategoryListScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
                 child: Text(
-                  '${items.length} ${items.length == 1 ? 'item' : 'items'} · ${BudgetFormat.money(total)}',
+                  '${items.length} ${items.length == 1 ? 'item' : 'items'} · ${BudgetFormat.money(total, currency: currency)}',
                   style: const TextStyle(
                     color: FalimyTheme.muted,
                     fontSize: 14,
@@ -168,7 +170,10 @@ class AssetCategoryListScreen extends ConsumerWidget {
                                       ),
                                     ),
                                     Text(
-                                      BudgetFormat.money(asset.value),
+                                      BudgetFormat.money(
+                                        asset.value,
+                                        currency: currency,
+                                      ),
                                       style: const TextStyle(
                                         color: FalimyTheme.ink,
                                         fontWeight: FontWeight.w700,

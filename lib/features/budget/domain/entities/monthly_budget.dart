@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import 'package:falimy/core/currency/app_currency.dart';
 import 'package:falimy/features/budget/domain/entities/budget_category.dart';
 
 class IncomeSource extends Equatable {
@@ -46,7 +47,7 @@ class IncomeSource extends Equatable {
 class MonthlyBudget extends Equatable {
   const MonthlyBudget({
     required this.month,
-    this.currency = 'AED',
+    this.currency = AppCurrency.defaultCode,
     this.savingsTargetPercent = 20,
     this.incomes = const [],
     this.categories = const [],
@@ -116,7 +117,7 @@ class MonthlyBudget extends Equatable {
     }
     return MonthlyBudget(
       month: (json['month'] as String?) ?? '',
-      currency: (json['currency'] as String?) ?? 'AED',
+      currency: AppCurrency.normalize(json['currency'] as String?),
       savingsTargetPercent:
           (json['savingsTargetPercent'] as num?)?.toDouble() ?? 20,
       incomes: incomes,

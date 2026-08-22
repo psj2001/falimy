@@ -87,7 +87,7 @@ class PaymentReminderNotifications {
     return true;
   }
 
-  Future<void> sync(List<PaymentReminder> reminders) async {
+  Future<void> sync(List<PaymentReminder> reminders, {String? currency}) async {
     await init();
     if (!_ready) return;
 
@@ -96,7 +96,7 @@ class PaymentReminderNotifications {
       final when = reminder.scheduleAt();
       if (when == null) continue;
       try {
-        await _schedule(reminder, when);
+        await _schedule(reminder, when, currency: currency);
       } catch (_) {}
     }
   }
@@ -108,7 +108,11 @@ class PaymentReminderNotifications {
     } catch (_) {}
   }
 
-  Future<void> _schedule(PaymentReminder reminder, DateTime when) async {
+  Future<void> _schedule(
+    PaymentReminder reminder,
+    DateTime when, {
+    String? currency,
+  }) async {
     final scheduled = tz.TZDateTime(
       tz.local,
       when.year,
@@ -136,7 +140,7 @@ class PaymentReminderNotifications {
     await _plugin.zonedSchedule(
       reminder.notificationId,
       'Pay ${reminder.title}',
-      '${reminder.amountLabel} is due $whenDue. Open Falimy to log it.',
+      '${reminder.amountLabel(currency)} is due $whenDue. Open Falimy to log it.',
       scheduled,
       const NotificationDetails(
         android: AndroidNotificationDetails(

@@ -95,6 +95,8 @@ const userSchema = new mongoose.Schema(
     salary: Number,
     studyClassOrCourse: String,
 
+    currency: { type: String, default: 'AED', trim: true, uppercase: true },
+
     memberLinks: { type: Map, of: memberLinkSchema, default: {} },
     linkedFromInvites: { type: [linkedInviteSchema], default: [] },
     location: geoLocationSchema,
@@ -137,6 +139,7 @@ userSchema.methods.toProfile = function toProfile() {
     companyName: this.companyName ?? null,
     salary: this.salary ?? null,
     studyClassOrCourse: this.studyClassOrCourse ?? null,
+    currency: this.currency || 'AED',
     memberLinks,
     linkedFromInvites: this.linkedFromInvites ?? [],
     location: toLocationJson(this.location),

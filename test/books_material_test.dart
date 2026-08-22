@@ -19,19 +19,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Financial'));
+    await tester.tap(find.byIcon(Icons.account_balance_wallet_outlined));
     await tester.pumpAndSettle();
 
-    // Force the bottom quick-add card (with ActionChips) into view.
-    final list = find.byType(Scrollable);
-    if (list.evaluate().isNotEmpty) {
-      await tester.drag(list.first, const Offset(0, -1200));
-      await tester.pumpAndSettle();
-      await tester.drag(list.first, const Offset(0, -1200));
-      await tester.pumpAndSettle();
-    }
-
-    expect(find.text('Add New Book'), findsWidgets);
+    expect(find.text('Add new book'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
@@ -48,13 +39,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final list = find.byType(Scrollable);
-    if (list.evaluate().isNotEmpty) {
-      await tester.drag(list.first, const Offset(0, -1600));
-      await tester.pumpAndSettle();
-    }
-
-    expect(find.text('Add New Book'), findsWidgets);
+    expect(find.text('Add new book'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 }

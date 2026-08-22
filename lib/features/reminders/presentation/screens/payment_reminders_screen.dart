@@ -6,6 +6,7 @@ import 'package:falimy/core/widgets/result_dialog.dart';
 import 'package:falimy/features/reminders/domain/payment_reminder.dart';
 import 'package:falimy/features/reminders/presentation/providers/payment_reminder_notifier.dart';
 import 'package:falimy/features/reminders/presentation/screens/add_edit_payment_reminder_screen.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 import 'package:falimy/features/reminders/presentation/widgets/payment_status_prompt.dart';
 
 class PaymentRemindersScreen extends ConsumerWidget {
@@ -77,6 +78,7 @@ class PaymentRemindersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(paymentReminderNotifierProvider);
     final reminders = state.upcoming();
+    final currency = ref.watch(preferredCurrencyProvider);
 
     return Scaffold(
       backgroundColor: FalimyTheme.mistBlueSoft,
@@ -167,6 +169,7 @@ class PaymentRemindersScreen extends ConsumerWidget {
                           final reminder = reminders[index];
                           return _ReminderTile(
                             reminder: reminder,
+                            currency: currency,
                             onTap: () => _openReminder(context, ref, reminder),
                             onEdit: () => _openAdd(context, existing: reminder),
                             onPaid: () =>
@@ -196,6 +199,7 @@ class PaymentRemindersScreen extends ConsumerWidget {
 class _ReminderTile extends StatelessWidget {
   const _ReminderTile({
     required this.reminder,
+    required this.currency,
     required this.onTap,
     required this.onEdit,
     required this.onPaid,
@@ -204,6 +208,7 @@ class _ReminderTile extends StatelessWidget {
   });
 
   final PaymentReminder reminder;
+  final String currency;
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onPaid;
@@ -263,7 +268,7 @@ class _ReminderTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${reminder.amountLabel} · ${reminder.dueLabel()}'
+                          '${reminder.amountLabel(currency)} · ${reminder.dueLabel()}'
                           '${reminder.monthly ? ' · Monthly' : ''}',
                           style: const TextStyle(
                             color: FalimyTheme.muted,

@@ -176,7 +176,7 @@ class HomeTab extends ConsumerWidget {
   }
 }
 
-class _BudgetCard extends StatelessWidget {
+class _BudgetCard extends ConsumerWidget {
   const _BudgetCard({
     required this.isLoading,
     required this.analysis,
@@ -188,10 +188,10 @@ class _BudgetCard extends StatelessWidget {
   final VoidCallback onOpen;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final data = analysis;
     final hasPlan = data?.hasPlan ?? false;
-    final currency = data?.budget.currency ?? 'AED';
+    final currency = ref.watch(preferredCurrencyProvider);
 
     return _HomeCard(
       onTap: onOpen,

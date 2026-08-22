@@ -12,6 +12,7 @@ import 'package:falimy/features/budget/presentation/widgets/income_sources_sheet
 import 'package:falimy/features/budget/presentation/widgets/item_cashbook_sheet.dart';
 import 'package:falimy/features/budget/presentation/widgets/item_reminder_sheet.dart';
 import 'package:falimy/features/budget/presentation/widgets/savings_gauge.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
 class BudgetScreen extends ConsumerStatefulWidget {
   const BudgetScreen({super.key});
@@ -49,6 +50,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     final state = ref.watch(budgetNotifierProvider);
     final analysis = ref.watch(budgetAnalysisProvider);
     final budget = state.budget;
+    final currency = ref.watch(preferredCurrencyProvider);
 
     return Scaffold(
       backgroundColor: FalimyTheme.cream,
@@ -170,7 +172,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                         _CategoryCard(
                           row: row,
                           monthElapsedPercent: analysis.monthElapsedPercent,
-                          currency: budget?.currency ?? 'AED',
+                          currency: currency,
                           expanded: _expanded.contains(row.category.id),
                           addingSub: _addingSubFor == row.category.id,
                           subDraft: _subDraft,
@@ -279,7 +281,7 @@ class _MonthSwitcher extends StatelessWidget {
   }
 }
 
-class _SummaryCard extends StatelessWidget {
+class _SummaryCard extends ConsumerWidget {
   const _SummaryCard({
     required this.analysis,
     required this.onEditIncome,
@@ -289,12 +291,12 @@ class _SummaryCard extends StatelessWidget {
   final VoidCallback onEditIncome;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final color = savingsGaugeColor(
       analysis.savingsRate,
       analysis.budget.savingsTargetPercent,
     );
-    final currency = analysis.budget.currency;
+    final currency = ref.watch(preferredCurrencyProvider);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

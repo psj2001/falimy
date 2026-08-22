@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:falimy/app/theme.dart';
 import 'package:falimy/features/financial/domain/entities/cash_book.dart';
 import 'package:falimy/features/financial/presentation/widgets/financial_format.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
-class BookTile extends StatelessWidget {
+class BookTile extends ConsumerWidget {
   const BookTile({
     super.key,
     required this.book,
@@ -23,8 +25,9 @@ class BookTile extends StatelessWidget {
   final bool cloudBusy;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final synced = book.syncedToCloud;
+    final currency = ref.watch(preferredCurrencyProvider);
 
     return InkWell(
       onTap: onTap,
@@ -84,7 +87,7 @@ class BookTile extends StatelessWidget {
               ),
             ),
             Text(
-              FinancialFormat.amount(balance),
+              FinancialFormat.amount(balance, currency: currency),
               style: TextStyle(
                 color: balance >= 0 ? FalimyTheme.seed : const Color(0xFFC1121F),
                 fontWeight: FontWeight.w700,

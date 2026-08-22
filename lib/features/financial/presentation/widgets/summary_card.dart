@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:falimy/app/theme.dart';
 import 'package:falimy/features/financial/presentation/widgets/financial_format.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
-class SummaryCard extends StatelessWidget {
+class SummaryCard extends ConsumerWidget {
   const SummaryCard({
     super.key,
     required this.netBalance,
@@ -18,7 +20,8 @@ class SummaryCard extends StatelessWidget {
   final VoidCallback? onViewReports;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currency = ref.watch(preferredCurrencyProvider);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -31,20 +34,20 @@ class SummaryCard extends StatelessWidget {
         children: [
           _row(
             label: 'Net Balance',
-            value: FinancialFormat.amount(netBalance),
+            value: FinancialFormat.amount(netBalance, currency: currency),
             valueColor: FalimyTheme.ink,
             bold: true,
           ),
           const Divider(height: 20),
           _row(
             label: 'Total In (+)',
-            value: FinancialFormat.amount(totalIn),
+            value: FinancialFormat.amount(totalIn, currency: currency),
             valueColor: FalimyTheme.seed,
           ),
           const SizedBox(height: 10),
           _row(
             label: 'Total Out (-)',
-            value: FinancialFormat.amount(totalOut),
+            value: FinancialFormat.amount(totalOut, currency: currency),
             valueColor: const Color(0xFFC1121F),
           ),
           if (onViewReports != null) ...[

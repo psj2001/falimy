@@ -11,6 +11,7 @@ import 'package:falimy/features/assets/presentation/providers/asset_notifier.dar
 import 'package:falimy/features/assets/presentation/screens/add_edit_asset_screen.dart';
 import 'package:falimy/features/assets/presentation/widgets/asset_type_image.dart';
 import 'package:falimy/features/budget/presentation/widgets/budget_format.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
 class AssetDetailScreen extends ConsumerWidget {
   const AssetDetailScreen({super.key, required this.assetId});
@@ -74,6 +75,7 @@ class AssetDetailScreen extends ConsumerWidget {
     final asset = ref.watch(
       assetNotifierProvider.select((s) => s.byId(assetId)),
     );
+    final currency = ref.watch(preferredCurrencyProvider);
 
     if (asset == null) {
       return Scaffold(
@@ -86,14 +88,14 @@ class AssetDetailScreen extends ConsumerWidget {
     final rows = <_DetailRow>[
       _DetailRow('Category', asset.category.title),
       _DetailRow('Owner', asset.ownerName),
-      _DetailRow('Current value', BudgetFormat.money(asset.value)),
+      _DetailRow('Current value', BudgetFormat.money(asset.value, currency: currency)),
       for (final field in asset.category.extraFields)
         if ((asset.fields[field.key] ?? '').isNotEmpty)
           _DetailRow(
             field.label,
             field.suffix == null
                 ? asset.fields[field.key]!
-                : '${asset.fields[field.key]} ${field.suffix}',
+                : '${asset.fields[field.key]} ${field.suffix == 'AED' ? currency : field.suffix}',
           ),
       if ((asset.notes ?? '').isNotEmpty) _DetailRow('Notes', asset.notes!),
       _DetailRow('Updated', DateFormat('d MMM yyyy').format(asset.updatedAt)),
@@ -155,7 +157,7 @@ class AssetDetailScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            BudgetFormat.money(asset.value),
+                            BudgetFormat.money(asset.value, currency: currency),
                             style: const TextStyle(
                               color: FalimyTheme.ink,
                               fontSize: 28,

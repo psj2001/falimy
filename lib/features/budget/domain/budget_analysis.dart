@@ -5,6 +5,7 @@ import 'package:falimy/features/budget/domain/entities/budget_item.dart';
 import 'package:falimy/features/budget/domain/entities/monthly_budget.dart';
 import 'package:falimy/features/financial/domain/entities/cash_entry.dart';
 import 'package:falimy/features/financial/domain/entities/entry_category.dart';
+import 'package:falimy/core/currency/app_currency.dart';
 
 enum BudgetStatus { withinLimit, nearLimit, overLimit, belowTarget }
 
@@ -324,16 +325,8 @@ int _matchScore(String needle, String key) {
 String _normalize(String value) =>
     value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
 
-String _money(double amount) {
-  final rounded = amount.round();
-  final digits = rounded.abs().toString();
-  final buffer = StringBuffer();
-  for (var i = 0; i < digits.length; i++) {
-    final remaining = digits.length - i;
-    if (i > 0 && remaining % 3 == 0) buffer.write(',');
-    buffer.write(digits[i]);
-  }
-  return 'AED $buffer';
+String _formatMoney(double amount, {required String currency}) {
+  return AppCurrency.format(amount.round(), currency: currency);
 }
 
 List<BudgetInsight> _insights({
@@ -351,6 +344,8 @@ List<BudgetInsight> _insights({
   required int budgetMonth,
 }) {
   final insights = <BudgetInsight>[];
+  String money(double amount) =>
+      _formatMoney(amount, currency: budget.currency);
 
   if (incomeBase <= 0 && totalPlannedExpense <= 0) {
     return const [
@@ -369,7 +364,7 @@ List<BudgetInsight> _insights({
         severity: InsightSeverity.critical,
         title: 'Spending more than you earn',
         detail:
-            'Planned expenses are ${_money(totalPlannedExpense - incomeBase)} over income. Cut costs or raise income before the month runs out.',
+            'Planned expenses are ${money(totalPlannedExpense - incomeBase)} over income. Cut costs or raise income before the month runs out.',
         impact: totalPlannedExpense - incomeBase,
       ),
     );
@@ -391,7 +386,7 @@ List<BudgetInsight> _insights({
         severity: gap >= incomeBase * 0.1
             ? InsightSeverity.critical
             : InsightSeverity.warning,
-        title: 'Save ${_money(gap)} more to hit ${savingsTarget.round()}%',
+        title: 'Save ${money(gap)} more to hit ${savingsTarget.round()}%',
         detail:
             'You’re at ${savingsRate.toStringAsFixed(1)}% vs a ${savingsTarget.round()}% target. $cutHint',
         impact: gap,
@@ -409,7 +404,7 @@ List<BudgetInsight> _insights({
           severity: InsightSeverity.warning,
           title: '${row.category.name} is below target',
           detail:
-              'Aim for ${row.category.targetPercent.round()}% of income. You’re short by ${_money(gap < 0 ? 0 : gap)}.',
+              'Aim for ${row.category.targetPercent.round()}% of income. You’re short by ${money(gap < 0 ? 0 : gap)}.',
           categoryId: row.category.id,
           impact: gap,
         ),
@@ -431,8 +426,8 @@ List<BudgetInsight> _insights({
           title:
               '${row.category.name} is ${row.percentOfIncome.round()}% of income vs ${row.category.targetPercent.round()}% recommended',
           detail: isDebt
-              ? 'Debt payments compound. Trim ${_money(trim)} to get back within the ${row.category.targetPercent.round()}% cap.'
-              : 'Trim ${_money(trim)} this month to get back within the recommended share.',
+              ? 'Debt payments compound. Trim ${money(trim)} to get back within the ${row.category.targetPercent.round()}% cap.'
+              : 'Trim ${money(trim)} this month to get back within the recommended share.',
           categoryId: row.category.id,
           impact: trim,
         ),
@@ -446,9 +441,9 @@ List<BudgetInsight> _insights({
           severity: over > row.planned * 0.25
               ? InsightSeverity.critical
               : InsightSeverity.warning,
-          title: 'You have spent ${_money(over)} over your ${row.category.name} plan',
+          title: 'You have spent ${money(over)} over your ${row.category.name} plan',
           detail:
-              'Actual ${_money(row.actual)} vs planned ${_money(row.planned)}.',
+              'Actual ${money(row.actual)} vs planned ${money(row.planned)}.',
           categoryId: row.category.id,
           impact: over,
         ),
@@ -458,7 +453,7 @@ List<BudgetInsight> _insights({
         BudgetInsight(
           severity: InsightSeverity.warning,
           title:
-              '${_money(row.actual)} spent on ${row.category.name} with no plan',
+              '${money(row.actual)} spent on ${row.category.name} with no plan',
           detail: 'Add a planned amount so this spend stays in the budget.',
           categoryId: row.category.id,
           impact: row.actual,
@@ -473,7 +468,7 @@ List<BudgetInsight> _insights({
         severity: unbudgetedActual > incomeBase * 0.05 && incomeBase > 0
             ? InsightSeverity.critical
             : InsightSeverity.warning,
-        title: '${_money(unbudgetedActual)} spent outside your budget',
+        title: '${money(unbudgetedActual)} spent outside your budget',
         detail:
             'Cashbook entries didn’t match a budget item. Add these categories or rename them so they count.',
         impact: unbudgetedActual,
@@ -505,7 +500,7 @@ List<BudgetInsight> _insights({
             detail: note != null && note.isNotEmpty
                 ? note
                 : (item.planned > 0
-                    ? 'Planned ${_money(item.planned)}. Log it to a cash book when paid.'
+                    ? 'Planned ${money(item.planned)}. Log it to a cash book when paid.'
                     : 'Set a planned amount or log it to a cash book when paid.'),
             categoryId: category.id,
             impact: item.planned > 0 ? item.planned : 1,

@@ -8,7 +8,11 @@ class FinancialFormat {
   static final DateFormat _pickerDate = DateFormat('dd/MM/yyyy');
   static final DateFormat _pickerTime = DateFormat('h:mm a');
 
-  static String amount(num value) => _amount.format(value);
+  static String amount(num value, {String? currency}) {
+    final formatted = _amount.format(value);
+    if (currency == null || currency.isEmpty) return formatted;
+    return '$currency $formatted';
+  }
 
   static String bookMeta({
     required DateTime createdAt,

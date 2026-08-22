@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:falimy/app/theme.dart';
+import 'package:falimy/core/currency/app_currency.dart';
 import 'package:falimy/core/widgets/app_text_field.dart';
 import 'package:falimy/core/widgets/onboarding_scaffold.dart';
 import 'package:falimy/core/widgets/primary_button.dart';
@@ -12,6 +13,7 @@ import 'package:falimy/features/financial/domain/entities/cash_book.dart';
 import 'package:falimy/features/financial/presentation/providers/financial_notifier.dart';
 import 'package:falimy/features/home/domain/unexpected_expense_category.dart';
 import 'package:falimy/features/home/presentation/screens/choose_cash_book_screen.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
 class AddUnexpectedExpenseScreen extends ConsumerStatefulWidget {
   const AddUnexpectedExpenseScreen({
@@ -107,6 +109,7 @@ class _AddUnexpectedExpenseScreenState
   @override
   Widget build(BuildContext context) {
     final category = widget.category;
+    final currency = ref.watch(preferredCurrencyProvider);
 
     return OnboardingScaffold(
       title: category.title,
@@ -191,9 +194,9 @@ class _AddUnexpectedExpenseScreenState
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Amount',
-                prefixText: 'AED  ',
+                prefixText: AppCurrency.prefix(currency),
               ),
               validator: (value) {
                 final parsed = num.tryParse(

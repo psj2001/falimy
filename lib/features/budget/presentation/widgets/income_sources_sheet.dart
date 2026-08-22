@@ -5,6 +5,7 @@ import 'package:falimy/app/theme.dart';
 import 'package:falimy/features/budget/domain/entities/monthly_budget.dart';
 import 'package:falimy/features/budget/presentation/providers/budget_notifier.dart';
 import 'package:falimy/features/budget/presentation/widgets/budget_format.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 
 Future<void> showIncomeSourcesSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -25,7 +26,7 @@ class _IncomeSourcesSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final budget = ref.watch(budgetNotifierProvider).budget;
     final incomes = budget?.incomes ?? const <IncomeSource>[];
-    final currency = budget?.currency ?? 'AED';
+    final currency = ref.watch(preferredCurrencyProvider);
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
 
     return Padding(

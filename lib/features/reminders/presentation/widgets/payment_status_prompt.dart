@@ -7,6 +7,7 @@ import 'package:falimy/core/widgets/result_dialog.dart';
 import 'package:falimy/features/financial/domain/entities/cash_book.dart';
 import 'package:falimy/features/financial/presentation/providers/financial_notifier.dart';
 import 'package:falimy/features/home/presentation/screens/choose_cash_book_screen.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 import 'package:falimy/features/reminders/domain/payment_reminder.dart';
 import 'package:falimy/features/reminders/presentation/providers/payment_reminder_notifier.dart';
 
@@ -88,7 +89,7 @@ Future<bool> recordReminderAsPaid(
     context,
     kind: ResultDialogKind.success,
     message:
-        '${reminder.title} (${reminder.amountLabel}) was added to ${book.name}.',
+        '${reminder.title} (${reminder.amountLabel(ref.read(preferredCurrencyProvider))}) was added to ${book.name}.',
   );
   return true;
 }
@@ -119,13 +120,14 @@ Future<CashBook?> _resolveCashBook(BuildContext context, WidgetRef ref) async {
   );
 }
 
-class _PaidOrNotPaidDialog extends StatelessWidget {
+class _PaidOrNotPaidDialog extends ConsumerWidget {
   const _PaidOrNotPaidDialog({required this.reminder});
 
   final PaymentReminder reminder;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currency = ref.watch(preferredCurrencyProvider);
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 28),
@@ -165,7 +167,7 @@ class _PaidOrNotPaidDialog extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${reminder.amountLabel} · ${reminder.dueLabel()}',
+                '${reminder.amountLabel(currency)} · ${reminder.dueLabel()}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,

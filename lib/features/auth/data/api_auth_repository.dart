@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:falimy/core/currency/app_currency.dart';
 import 'package:falimy/core/services/api_client.dart';
 import 'package:falimy/core/services/device_location.dart';
 import 'package:falimy/features/auth/domain/entities/user.dart';
@@ -505,6 +506,7 @@ class FamilyProfileMapper {
       companyName: data['companyName'] as String?,
       salary: data['salary'] as num?,
       studyClassOrCourse: data['studyClassOrCourse'] as String?,
+      currency: AppCurrency.normalize(_asString(data['currency'])),
       linkedInviterName: linkedInviterName,
       linkedMemberKind: linkedMemberKind,
       linkedMemberRole: linkedMemberRole,
@@ -562,6 +564,7 @@ class FamilyProfileMapper {
       'companyName': profile.companyName,
       'salary': profile.salary,
       'studyClassOrCourse': profile.studyClassOrCourse,
+      'currency': profile.currency,
     };
   }
 }

@@ -1,8 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:intl/intl.dart';
 
+import 'package:falimy/core/currency/app_currency.dart';
+
 final DateFormat paymentReminderDateFormat = DateFormat('d MMM yyyy');
-final NumberFormat _amountFormat = NumberFormat('#,##0.##');
 
 class PaymentReminder extends Equatable {
   const PaymentReminder({
@@ -31,16 +32,17 @@ class PaymentReminder extends Equatable {
 
   int get notificationId => id.hashCode & 0x7fffffff;
 
-  String get amountLabel => 'AED ${_amountFormat.format(amount)}';
+  String amountLabel([String? currency]) =>
+      AppCurrency.format(amount, currency: currency);
 
   String get inboxId {
     final due = displayDueDate();
     return 'payrem_${id}_${due.year}_${due.month}';
   }
 
-  String inboxMessage([DateTime? now]) {
+  String inboxMessage([DateTime? now, String? currency]) {
     final due = displayDueDate(now);
-    return '$amountLabel is due ${DateFormat('d MMM').format(due)}'
+    return '${amountLabel(currency)} is due ${DateFormat('d MMM').format(due)}'
         '${monthly ? ' (monthly)' : ''}.';
   }
 

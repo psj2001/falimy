@@ -158,7 +158,13 @@ class NotificationNotifier extends Notifier<NotificationState> {
       final items = <AppNotification>[];
       for (final reminder in reminders) {
         if (!reminder.shouldAppearInInbox()) continue;
-        items.add(_fromReminder(reminder, readIds.contains(reminder.inboxId)));
+        items.add(
+          _fromReminder(
+            reminder,
+            readIds.contains(reminder.inboxId),
+            ref.read(preferredCurrencyProvider),
+          ),
+        );
       }
       items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return items;
@@ -168,14 +174,18 @@ class NotificationNotifier extends Notifier<NotificationState> {
   }
 }
 
-AppNotification _fromReminder(PaymentReminder reminder, bool isRead) {
+AppNotification _fromReminder(
+  PaymentReminder reminder,
+  bool isRead,
+  String currency,
+) {
   final due = reminder.displayDueDate();
   final notifyDay = due.subtract(Duration(days: reminder.remindDaysBefore));
   return AppNotification(
     id: reminder.inboxId,
     type: 'payment_reminder',
     title: 'Pay ${reminder.title}',
-    message: reminder.inboxMessage(),
+    message: reminder.inboxMessage(null, currency),
     isRead: isRead,
     createdAt: DateTime(notifyDay.year, notifyDay.month, notifyDay.day, 9),
     data: {'reminderId': reminder.id},

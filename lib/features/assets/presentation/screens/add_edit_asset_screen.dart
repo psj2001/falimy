@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:falimy/app/theme.dart';
+import 'package:falimy/core/currency/app_currency.dart';
 import 'package:falimy/core/widgets/app_text_field.dart';
 import 'package:falimy/core/widgets/primary_button.dart';
 import 'package:falimy/core/widgets/result_dialog.dart';
@@ -224,6 +225,7 @@ class _AddEditAssetScreenState extends ConsumerState<AddEditAssetScreen> {
   Widget build(BuildContext context) {
     final owners = ownersFromProfile(ref.watch(onboardingNotifierProvider));
     final saving = ref.watch(assetNotifierProvider).isSaving;
+    final currency = ref.watch(preferredCurrencyProvider);
 
     return Scaffold(
       backgroundColor: FalimyTheme.mistBlueSoft,
@@ -298,6 +300,7 @@ class _AddEditAssetScreenState extends ConsumerState<AddEditAssetScreen> {
                           spec: field,
                           controller: _extraControllers[field.key]!,
                           onPickDate: () => _pickDate(field),
+                          currency: currency,
                           onChoice: (value) {
                             setState(() {
                               _extraControllers[field.key]!.text = value;
@@ -331,9 +334,9 @@ class _AddEditAssetScreenState extends ConsumerState<AddEditAssetScreen> {
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Current value',
-                          prefixText: 'AED  ',
+                          prefixText: AppCurrency.prefix(currency),
                         ),
                         validator: (value) {
                           final parsed = num.tryParse(
@@ -353,6 +356,7 @@ class _AddEditAssetScreenState extends ConsumerState<AddEditAssetScreen> {
                           spec: field,
                           controller: _extraControllers[field.key]!,
                           onPickDate: () => _pickDate(field),
+                          currency: currency,
                           onChoice: (value) {
                             setState(() {
                               _extraControllers[field.key]!.text = value;
@@ -466,12 +470,14 @@ class _ExtraField extends StatelessWidget {
     required this.controller,
     required this.onPickDate,
     required this.onChoice,
+    required this.currency,
   });
 
   final AssetFieldSpec spec;
   final TextEditingController controller;
   final VoidCallback onPickDate;
   final ValueChanged<String> onChoice;
+  final String currency;
 
   @override
   Widget build(BuildContext context) {
@@ -515,7 +521,7 @@ class _ExtraField extends StatelessWidget {
           ],
           decoration: InputDecoration(
             labelText: spec.label,
-            suffixText: spec.suffix,
+            suffixText: spec.suffix == 'AED' ? currency : spec.suffix,
           ),
           validator: spec.required
               ? (value) {

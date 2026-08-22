@@ -7,6 +7,7 @@ import 'package:falimy/features/reminders/data/local_payment_reminder_repository
 import 'package:falimy/features/reminders/data/payment_reminder_local_store.dart';
 import 'package:falimy/features/reminders/data/payment_reminder_notifications.dart';
 import 'package:falimy/features/notifications/presentation/providers/notification_notifier.dart';
+import 'package:falimy/features/onboarding/presentation/providers/onboarding_notifier.dart';
 import 'package:falimy/features/reminders/data/syncing_payment_reminder_repository.dart';
 import 'package:falimy/features/reminders/domain/payment_reminder.dart';
 import 'package:falimy/features/reminders/domain/repositories/payment_reminder_repository.dart';
@@ -85,6 +86,11 @@ class PaymentReminderNotifier extends Notifier<PaymentReminderState> {
     ref.listen(authNotifierProvider.select((s) => s.user?.id), (previous, next) {
       if (previous != next) Future.microtask(load);
     });
+    ref.listen(preferredCurrencyProvider, (previous, next) {
+      if (previous != next) {
+        Future.microtask(() => _syncNotifications(state.reminders));
+      }
+    });
     Future.microtask(load);
     return const PaymentReminderState();
   }
@@ -96,7 +102,7 @@ class PaymentReminderNotifier extends Notifier<PaymentReminderState> {
           .read(paymentReminderRepositoryProvider)
           .load();
       state = state.copyWith(reminders: reminders, isLoading: false);
-      await PaymentReminderNotifications.instance.sync(reminders);
+      await _syncNotifications(reminders);
       await ref.read(notificationNotifierProvider.notifier).load(silent: true);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -126,7 +132,7 @@ class PaymentReminderNotifier extends Notifier<PaymentReminderState> {
         next.add(saved);
       }
       state = state.copyWith(reminders: next, isSaving: false);
-      await PaymentReminderNotifications.instance.sync(next);
+      await _syncNotifications(next);
       await ref.read(notificationNotifierProvider.notifier).load(silent: true);
       return saved;
     } catch (e) {
@@ -145,7 +151,7 @@ class PaymentReminderNotifier extends Notifier<PaymentReminderState> {
       if (removed != null) {
         await PaymentReminderNotifications.instance.cancel(removed);
       }
-      await PaymentReminderNotifications.instance.sync(next);
+      await _syncNotifications(next);
       await ref.read(notificationNotifierProvider.notifier).load(silent: true);
       return true;
     } catch (e) {
@@ -160,6 +166,13 @@ class PaymentReminderNotifier extends Notifier<PaymentReminderState> {
       updatedAt: DateTime.now(),
     );
     return await upsert(paid) != null;
+  }
+
+  Future<void> _syncNotifications(List<PaymentReminder> reminders) {
+    return PaymentReminderNotifications.instance.sync(
+      reminders,
+      currency: ref.read(preferredCurrencyProvider),
+    );
   }
 }
 

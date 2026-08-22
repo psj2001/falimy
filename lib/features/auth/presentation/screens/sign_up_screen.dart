@@ -34,7 +34,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   Timer? _lookupDebounce;
   DeviceLocation? _location;
   bool _locating = true;
-  String? _locationError;
 
   @override
   void initState() {
@@ -123,18 +122,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   Future<void> _detectLocation() async {
-    setState(() {
-      _locating = true;
-      _locationError = null;
-    });
+    _locating = true;
     final location = await captureDeviceLocation();
     if (!mounted) return;
     setState(() {
       _location = location;
       _locating = false;
-      _locationError = location == null
-          ? 'Turn on location so we can record your country, state, and place.'
-          : null;
     });
   }
 
@@ -266,13 +259,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                _SignupLocationCard(
-                  locating: _locating,
-                  location: _location,
-                  error: _locationError,
-                  onRetry: _detectLocation,
-                ),
-                const SizedBox(height: 8),
                 CheckboxListTile(
                   value: _joinWithReferral,
                   contentPadding: EdgeInsets.zero,
@@ -424,68 +410,3 @@ class _PreviewRow extends StatelessWidget {
   }
 }
 
-class _SignupLocationCard extends StatelessWidget {
-  const _SignupLocationCard({
-    required this.locating,
-    required this.location,
-    required this.error,
-    required this.onRetry,
-  });
-
-  final bool locating;
-  final DeviceLocation? location;
-  final String? error;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = location;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.35),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.place_outlined,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: locating
-                ? const Text('Finding your country, state, and place…')
-                : loc != null
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        loc.summary,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (loc.hasFix) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          '${loc.latitude!.toStringAsFixed(5)}, ${loc.longitude!.toStringAsFixed(5)}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ],
-                  )
-                : Text(error ?? 'Location not available yet'),
-          ),
-          if (!locating && loc == null)
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
-        ],
-      ),
-    );
-  }
-}

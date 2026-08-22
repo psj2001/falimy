@@ -3,6 +3,7 @@ const User = require('../models/User');
 const { authRequired } = require('../middleware/auth');
 const { reciprocalMemberLinks } = require('../utils/familyLinks');
 const { hydrateProfile, isRemotePhoto } = require('../utils/hydrateProfile');
+const { normalizeCurrency } = require('../utils/currency');
 
 const router = express.Router();
 
@@ -171,6 +172,10 @@ router.put('/', authRequired, async (req, res) => {
       salary: body.salary != null ? Number(body.salary) : null,
       studyClassOrCourse: body.studyClassOrCourse ?? null,
     };
+
+    if (typeof body.currency === 'string') {
+      updates.currency = normalizeCurrency(body.currency);
+    }
 
     if (body.photoPath === null || body.photoPath === '') {
       updates.photoPath = null;

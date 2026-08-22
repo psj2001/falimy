@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:falimy/core/currency/app_currency.dart';
+
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../../domain/entities/family_profile.dart';
 import 'onboarding_repository_provider.dart';
@@ -251,6 +253,13 @@ class OnboardingNotifier extends Notifier<FamilyProfile> {
     await _persist();
   }
 
+  Future<void> setCurrency(String currency) async {
+    final code = AppCurrency.normalize(currency);
+    if (state.currency == code) return;
+    _set(state.copyWith(currency: code));
+    await _persist();
+  }
+
   Future<void> updateProfile(FamilyProfile profile) async {
     _set(profile);
     await _persist();
@@ -281,3 +290,9 @@ class OnboardingNotifier extends Notifier<FamilyProfile> {
 
 final onboardingNotifierProvider =
     NotifierProvider<OnboardingNotifier, FamilyProfile>(OnboardingNotifier.new);
+
+final preferredCurrencyProvider = Provider<String>((ref) {
+  return AppCurrency.normalize(
+    ref.watch(onboardingNotifierProvider.select((profile) => profile.currency)),
+  );
+});

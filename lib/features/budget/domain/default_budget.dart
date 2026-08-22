@@ -1,3 +1,4 @@
+import 'package:falimy/core/currency/app_currency.dart';
 import 'package:falimy/features/budget/domain/entities/budget_category.dart';
 import 'package:falimy/features/budget/domain/entities/budget_item.dart';
 import 'package:falimy/features/budget/domain/entities/monthly_budget.dart';
@@ -28,9 +29,13 @@ BudgetItem _item(String id, String name, [List<String> extra = const []]) {
   );
 }
 
-MonthlyBudget defaultMonthlyBudget(String month) {
+MonthlyBudget defaultMonthlyBudget(
+  String month, {
+  String currency = AppCurrency.defaultCode,
+}) {
   return MonthlyBudget(
     month: month,
+    currency: AppCurrency.normalize(currency),
     isDefault: true,
     incomes: const [
       IncomeSource(id: 'inc-salary', name: 'Salary'),
