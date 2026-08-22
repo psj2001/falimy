@@ -17,6 +17,9 @@ module.exports = {
   jwtSecret: env('JWT_SECRET', 'falimy-dev-secret'),
   jwtExpiresIn: env('JWT_EXPIRES_IN', '365d'),
 
+  adminEmail: env('ADMIN_EMAIL', 'admin@gmail.com').toLowerCase(),
+  adminPassword: env('ADMIN_PASSWORD', '123456'),
+
   // Free SMTP (Gmail App Password, Brevo, Mailjet, etc.)
   smtpHost: env('SMTP_HOST', 'smtp.gmail.com'),
   smtpPort: Number(env('SMTP_PORT', '587')),

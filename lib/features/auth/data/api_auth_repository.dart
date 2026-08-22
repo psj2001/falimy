@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:falimy/core/services/api_client.dart';
+import 'package:falimy/core/services/device_location.dart';
 import 'package:falimy/features/auth/domain/entities/user.dart';
 import 'package:falimy/features/auth/domain/repositories/auth_repository.dart';
 import 'package:falimy/features/onboarding/domain/entities/family_profile.dart';
@@ -120,6 +121,7 @@ class ApiAuthRepository implements AuthRepository {
           await _api.setToken(refreshed);
         }
         _controller.add(user);
+        unawaited(_maybeReportLocation());
         return;
       } on ApiException catch (e) {
         if (e.statusCode == 401) {
@@ -147,15 +149,41 @@ class ApiAuthRepository implements AuthRepository {
     _controller.add(user);
   }
 
+  Future<void> _maybeReportLocation() async {
+    try {
+      final location = await captureDeviceLocation(requestPermission: false);
+      if (location == null) return;
+      await _api.postJson('/api/auth/location', {'location': location.toJson()});
+    } catch (_) {}
+  }
+
+  Map<String, dynamic> _authBody({
+    required String email,
+    required String password,
+    DeviceLocation? location,
+    String? referralCode,
+    String? otp,
+  }) {
+    return {
+      'email': email.trim(),
+      'password': password,
+      if (otp != null) 'otp': otp.trim(),
+      if (referralCode != null && referralCode.trim().isNotEmpty)
+        'referralCode': referralCode.trim().toUpperCase(),
+      if (location != null) 'location': location.toJson(),
+    };
+  }
+
   Future<AuthSessionResult> _authPost(
     String path, {
     required String email,
     required String password,
+    DeviceLocation? location,
   }) async {
-    final json = await _api.postJson(path, {
-      'email': email.trim(),
-      'password': password,
-    });
+    final json = await _api.postJson(
+      path,
+      _authBody(email: email, password: password, location: location),
+    );
 
     final token = json['token'] as String?;
     final userJson = json['user'] as Map<String, dynamic>?;
@@ -203,8 +231,14 @@ class ApiAuthRepository implements AuthRepository {
   Future<AuthSessionResult> signInWithSession({
     required String email,
     required String password,
+    DeviceLocation? location,
   }) {
-    return _authPost('/api/auth/sign-in', email: email, password: password);
+    return _authPost(
+      '/api/auth/sign-in',
+      email: email,
+      password: password,
+      location: location,
+    );
   }
 
   /// Sign up: sends OTP and returns pending verification (no session yet).
@@ -212,13 +246,17 @@ class ApiAuthRepository implements AuthRepository {
     required String email,
     required String password,
     String? referralCode,
+    DeviceLocation? location,
   }) async {
-    final json = await _api.postJson('/api/auth/sign-up', {
-      'email': email.trim(),
-      'password': password,
-      if (referralCode != null && referralCode.trim().isNotEmpty)
-        'referralCode': referralCode.trim().toUpperCase(),
-    });
+    final json = await _api.postJson(
+      '/api/auth/sign-up',
+      _authBody(
+        email: email,
+        password: password,
+        referralCode: referralCode,
+        location: location,
+      ),
+    );
 
     if (json['needsVerification'] == true) {
       return SignUpPendingResult(
@@ -251,10 +289,12 @@ class ApiAuthRepository implements AuthRepository {
   Future<AuthSessionResult> verifyEmailWithSession({
     required String email,
     required String otp,
+    DeviceLocation? location,
   }) async {
     final json = await _api.postJson('/api/auth/verify-email', {
       'email': email.trim(),
       'otp': otp.trim(),
+      if (location != null) 'location': location.toJson(),
     });
 
     final token = json['token'] as String?;

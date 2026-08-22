@@ -47,3 +47,7 @@ app.*.map.json
 # Server secrets & local Fly config
 server/.env
 .fly-config/
+
+# Admin dashboard
+admin/node_modules/
+admin/dist/

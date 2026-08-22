@@ -11,6 +11,10 @@ const { normalizeReferralCode } = require('../utils/referral');
 const { reciprocalMemberLinks } = require('../utils/familyLinks');
 const { hydrateProfile } = require('../utils/hydrateProfile');
 const config = require('../config');
+const {
+  resolveSignupLocation,
+  shouldReplaceLocation,
+} = require('../services/location');
 
 const router = express.Router();
 
@@ -33,7 +37,12 @@ function shouldExposeDevOtp() {
   return config.mailDevExposeOtp || !isMailConfigured();
 }
 
-async function issuePendingSignup({ email, passwordHash, referralCode }) {
+async function issuePendingSignup({
+  email,
+  passwordHash,
+  referralCode,
+  location,
+}) {
   const otp = generateOtp();
   const otpHash = await hashOtp(otp);
   const otpExpiresAt = new Date(Date.now() + OTP_TTL_MS);
@@ -47,6 +56,7 @@ async function issuePendingSignup({ email, passwordHash, referralCode }) {
       otpExpiresAt,
       otpAttempts: 0,
       referralCode: referralCode || null,
+      ...(location ? { location } : {}),
     },
     { upsert: true, new: true, setDefaultsOnInsert: true },
   );
@@ -366,7 +376,7 @@ router.post('/sign-up', async (req, res) => {
     }
 
     const existing = await User.findOne({ email });
-    if (existing) {
+    if (existing || email === config.adminEmail) {
       return res
         .status(409)
         .json({ message: 'An account already exists for this email' });
@@ -388,10 +398,12 @@ router.post('/sign-up', async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const location = await resolveSignupLocation(req);
     const payload = await issuePendingSignup({
       email,
       passwordHash,
       referralCode,
+      location,
     });
     return res.status(201).json(payload);
   } catch (err) {
@@ -446,9 +458,15 @@ router.post('/verify-email', async (req, res) => {
         .json({ message: 'An account already exists for this email' });
     }
 
+    const incomingLocation = await resolveSignupLocation(req);
+    const location = shouldReplaceLocation(pending.location, incomingLocation)
+      ? incomingLocation
+      : pending.location || incomingLocation;
+
     const user = await User.create({
       email,
       passwordHash: pending.passwordHash,
+      ...(location ? { location } : {}),
     });
     await PendingSignup.deleteOne({ _id: pending._id });
 
@@ -558,8 +576,18 @@ router.post('/sign-in', async (req, res) => {
     if (!ok) {
       return res.status(401).json({ message: 'Incorrect email or password' });
     }
+    if (user.role === 'admin') {
+      return res.status(403).json({
+        message: 'Use the admin dashboard to sign in with this account',
+      });
+    }
 
     const claimedInvites = await claimPendingInvites(user);
+    const incomingLocation = await resolveSignupLocation(req);
+    if (shouldReplaceLocation(user.location, incomingLocation)) {
+      user.location = incomingLocation;
+      await user.save();
+    }
     const fresh = await User.findById(user._id);
 
     return res.json({
@@ -593,6 +621,24 @@ router.get('/me', authRequired, async (req, res) => {
   } catch (err) {
     console.error('me', err);
     return res.status(500).json({ message: 'Failed to load session' });
+  }
+});
+
+router.post('/location', authRequired, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+    const incomingLocation = await resolveSignupLocation(req);
+    if (shouldReplaceLocation(user.location, incomingLocation)) {
+      user.location = incomingLocation;
+      await user.save();
+    }
+    return res.json({ location: user.toProfile().location });
+  } catch (err) {
+    console.error('auth location', err);
+    return res.status(500).json({ message: 'Failed to save location' });
   }
 });
 

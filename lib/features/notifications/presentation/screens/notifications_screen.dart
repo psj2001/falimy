@@ -137,6 +137,7 @@ class _NotificationCard extends StatelessWidget {
     final icon = switch (notification.type) {
       'family_invite' => Icons.mail_outline_rounded,
       'payment_reminder' => Icons.notifications_active_outlined,
+      'admin' => Icons.campaign_outlined,
       _ => Icons.family_restroom_rounded,
     };
 

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { geoLocationSchema, toLocationJson } = require('./geoLocation');
 
 const siblingSchema = new mongoose.Schema(
   {
@@ -65,6 +66,12 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     passwordHash: { type: String, required: true },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+      index: true,
+    },
 
     // Family profile
     fullName: String,
@@ -90,6 +97,7 @@ const userSchema = new mongoose.Schema(
 
     memberLinks: { type: Map, of: memberLinkSchema, default: {} },
     linkedFromInvites: { type: [linkedInviteSchema], default: [] },
+    location: geoLocationSchema,
   },
   { timestamps: true },
 );
@@ -131,6 +139,7 @@ userSchema.methods.toProfile = function toProfile() {
     studyClassOrCourse: this.studyClassOrCourse ?? null,
     memberLinks,
     linkedFromInvites: this.linkedFromInvites ?? [],
+    location: toLocationJson(this.location),
   };
 };
 

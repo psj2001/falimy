@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_routes.dart';
+import '../../../../core/services/device_location.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../providers/auth_notifier.dart';
@@ -30,11 +31,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final location = await captureDeviceLocation();
+    if (!mounted) return;
+
     final ok = await ref
         .read(authNotifierProvider.notifier)
         .signIn(
           email: _emailController.text,
           password: _passwordController.text,
+          location: location,
         );
     if (!mounted) return;
     if (!ok) {

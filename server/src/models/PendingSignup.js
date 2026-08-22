@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { geoLocationSchema } = require('./geoLocation');
 
 const pendingSignupSchema = new mongoose.Schema(
   {
@@ -19,6 +20,7 @@ const pendingSignupSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    location: geoLocationSchema,
   },
   { timestamps: true },
 );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_routes.dart';
+import '../../../../core/services/device_location.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../providers/auth_notifier.dart';
@@ -41,9 +42,16 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   Future<void> _verify() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final location = await captureDeviceLocation(requestPermission: false);
+    if (!mounted) return;
+
     final ok = await ref
         .read(authNotifierProvider.notifier)
-        .verifyEmail(email: widget.email, otp: _otpController.text.trim());
+        .verifyEmail(
+          email: widget.email,
+          otp: _otpController.text.trim(),
+          location: location,
+        );
     if (!mounted) return;
     if (!ok) {
       final error = ref.read(authNotifierProvider).error;

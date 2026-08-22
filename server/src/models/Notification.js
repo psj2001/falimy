@@ -10,7 +10,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['family_invite', 'family_linked'],
+      enum: ['family_invite', 'family_linked', 'admin'],
       required: true,
     },
     title: { type: String, required: true },

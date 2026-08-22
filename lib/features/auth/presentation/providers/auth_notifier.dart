@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:falimy/core/services/api_client.dart';
+import 'package:falimy/core/services/device_location.dart';
 import 'package:falimy/features/invites/domain/family_invite.dart';
 
 import '../../domain/entities/user.dart';
@@ -114,12 +115,20 @@ class AuthNotifier extends Notifier<AuthState> {
     return AuthState(user: repo.currentUser, isInitialized: false);
   }
 
-  Future<bool> signIn({required String email, required String password}) async {
+  Future<bool> signIn({
+    required String email,
+    required String password,
+    DeviceLocation? location,
+  }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final session = await ref
           .read(apiAuthRepositoryProvider)
-          .signInWithSession(email: email, password: password);
+          .signInWithSession(
+            email: email,
+            password: password,
+            location: location,
+          );
       state = state.copyWith(
         user: session.user,
         isLoading: false,
@@ -157,6 +166,7 @@ class AuthNotifier extends Notifier<AuthState> {
     required String email,
     required String password,
     String? referralCode,
+    DeviceLocation? location,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -166,6 +176,7 @@ class AuthNotifier extends Notifier<AuthState> {
             email: email,
             password: password,
             referralCode: referralCode,
+            location: location,
           );
       state = state.copyWith(
         isLoading: false,
@@ -185,12 +196,20 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  Future<bool> verifyEmail({required String email, required String otp}) async {
+  Future<bool> verifyEmail({
+    required String email,
+    required String otp,
+    DeviceLocation? location,
+  }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final session = await ref
           .read(apiAuthRepositoryProvider)
-          .verifyEmailWithSession(email: email, otp: otp);
+          .verifyEmailWithSession(
+            email: email,
+            otp: otp,
+            location: location,
+          );
       state = state.copyWith(
         user: session.user,
         isLoading: false,

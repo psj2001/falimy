@@ -45,6 +45,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Falimy uses your location when you create an account so we can record your country, state, and place.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Falimy needs camera access so you can take a profile photo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
